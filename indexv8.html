@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v72 // CHARONIA LAMPAS MEDIA ARCHAEOLOGY</title>
+    <style>
+        :root { 
+            --amber: #ffbf00; --blue: #00d2ff; --bg: #050608; 
+            --panel: #0a0c0f; --stone: #1a1a1a; --alert: #ff2a2a;
+            --pure: #00ff66; --relic: #ff55ff;
+        }
+        
+        body { 
+            background: var(--bg); color: var(--amber); 
+            font-family: 'Courier New', monospace; 
+            padding: 40px 20px; margin: 0; 
+            display: flex; flex-direction: column; align-items: center;
+            transition: all 0.5s ease;
+        }
+
+        .header { text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 30px; width: 100%; max-width: 800px; }
+        
+        .dashboard { 
+            background: var(--panel); border: 1px solid #333; padding: 30px; 
+            width: 100%; max-width: 800px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; 
+            box-shadow: 0 0 40px rgba(0,0,0,1); transition: all 0.5s ease;
+        }
+
+        .counter-display { grid-column: span 2; background: #000; border: 1px solid var(--blue); padding: 20px; text-align: center; transition: 0.3s; }
+        .counter-label { color: var(--blue); font-size: 12px; letter-spacing: 2px; }
+        .counter-value { font-size: 48px; color: #fff; font-weight: bold; text-shadow: 0 0 15px var(--blue); margin-top: 10px; font-family: 'Courier New', monospace; }
+        
+        .progress-container { grid-column: span 2; height: 10px; background: #111; border: 1px solid #333; width: 100%; }
+        .progress-fill { height: 100%; width: 0%; background: var(--pure); transition: 0.2s; }
+
+        .stat-box { background: #000; border: 1px solid var(--stone); padding: 15px; text-align: center; transition: 0.3s; }
+        .stat-label { font-size: 10px; color: #777; margin-bottom: 5px; text-transform: uppercase; }
+        .stat-val { font-size: 24px; color: #fff; }
+
+        .terminal { 
+            grid-column: span 2; background: #000; border: 1px dashed #444; 
+            padding: 15px; height: 200px; overflow-y: auto; font-size: 12px; color: #666; 
+            display: flex; flex-direction: column; gap: 5px; line-height: 1.5;
+        }
+        
+        button { 
+            grid-column: span 2; background: #111; color: var(--amber); border: 1px solid var(--amber); 
+            padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; 
+        }
+        button:hover { background: var(--amber); color: #000; }
+        button:disabled { border-color: #333; color: #333; cursor: not-allowed; }
+
+        /* THE POMPEII ASH STATE (CSS STATIC NOISE) */
+        body.ash-state {
+            background-color: #333;
+            background-image: repeating-radial-gradient(circle at 17% 32%, #555, #555 1px, #444 1px, #444 2px);
+            color: #888;
+        }
+        body.ash-state .dashboard {
+            background: rgba(40, 40, 40, 0.9); border-color: #555; box-shadow: none; filter: grayscale(100%);
+        }
+        body.ash-state .counter-display { border-color: #222; background: #222; }
+        body.ash-state .counter-label { color: #555; }
+        body.ash-state .counter-value { color: #111; text-shadow: none; font-size: 54px; letter-spacing: 5px; }
+        body.ash-state .stat-box { border-color: #333; }
+        body.ash-state .progress-fill { background: #444; }
+        body.ash-state .terminal { border-color: #222; color: #aaa; background: #1a1a1a; }
+        body.ash-state .header h2, body.ash-state .header div { color: #555 !important; }
+        
+        /* METALLIC CLIPPING EFFECT (ROMAN ERA) */
+        .bronze-clip { color: #cd7f32 !important; text-shadow: 0 0 20px #cd7f32, 0 0 40px #cd7f32 !important; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="letter-spacing: 3px; margin: 0; color: var(--blue);">CHARONIA LAMPAS // 41-TET BOMB</h2>
+        <div style="font-size: 11px; color: #777; margin-top: 5px;">MEDIA ARCHAEOLOGY: 26-BIT AVALANCHE ENGINE</div>
+    </div>
+
+    <div class="dashboard" id="dash">
+        
+        <div class="counter-display" id="uiCounterBox">
+            <div class="counter-label">26-BIT AVALANCHE COUNTER</div>
+            <div class="counter-value" id="uiCounter">00000000</div>
+        </div>
+
+        <div class="progress-container"><div class="progress-fill" id="uiProgress"></div></div>
+
+        <div class="stat-box" id="boxFreq">
+            <div class="stat-label">DSP FREQUENTIE (Hz)</div>
+            <div class="stat-val" id="uiFreq" style="color: var(--pure);">220.000</div>
+        </div>
+
+        <div class="stat-box" id="boxEra">
+            <div class="stat-label">HISTORISCHE FASE</div>
+            <div class="stat-val" id="uiEra" style="color: var(--blue);">OORSPRONG</div>
+        </div>
+
+        <div class="terminal" id="uiTerminal">
+            <div>> Akoestisch systeem "Charonia lampas" ingeladen.</div>
+            <div>> 41-TET Taylor-expansie actief. Wachten op overload...</div>
+        </div>
+
+        <button id="btnStart">INITIËER HISTORISCHE OVERLOAD</button>
+    </div>
+
+    <script>
+        const uiCounter = document.getElementById('uiCounter');
+        const uiProgress = document.getElementById('uiProgress');
+        const uiFreq = document.getElementById('uiFreq');
+        const uiEra = document.getElementById('uiEra');
+        const uiTerminal = document.getElementById('uiTerminal');
+        const btnStart = document.getElementById('btnStart');
+        const dash = document.getElementById('dash');
+
+        const MAX_26_BIT = 67108864; 
+        const BASE_FREQ = 220.0;
+        
+        let counter = 0;
+        let animationId;
+        let isRunning = false;
+
+        // Fase Tracker: 0 = Init, 1 = Neolithic, 2 = Roman, 3 = Pompeii
+        let historyPhase = 0; 
+
+        function logTerminal(msg, color = "#666", weight = "normal") {
+            const entry = document.createElement('div');
+            entry.style.color = color;
+            entry.style.fontWeight = weight;
+            entry.innerText = `[${new Date().toISOString().substring(11, 23)}] ${msg}`;
+            uiTerminal.appendChild(entry);
+            uiTerminal.scrollTop = uiTerminal.scrollHeight; // Auto-scroll
+        }
+
+        function runSequence() {
+            // Exponentiële toename om theatraal naar de crash te versnellen
+            const increment = Math.max(1, Math.floor(Math.pow(counter / MAX_26_BIT, 2) * 150000) + 11);
+            counter += increment;
+
+            if (counter >= MAX_26_BIT) {
+                counter = MAX_26_BIT;
+                triggerPompeiiCrash();
+                return;
+            }
+
+            const ratio = counter / MAX_26_BIT;
+            const step = counter % 41;
+            
+            // Simpele weergave van frequentie-corruptie
+            let freq = BASE_FREQ * Math.pow(2, step / 41);
+
+            // --- DE MEDIA-ARCHEOLOGISCHE TRIGGERS ---
+
+            // FASE 1: NEOLITHICUM (Bij 50% belasting)
+            if (ratio > 0.5 && historyPhase === 0) {
+                historyPhase = 1;
+                uiEra.innerText = "NEOLITHICUM";
+                uiEra.style.color = "var(--amber)";
+                uiFreq.style.color = "var(--amber)";
+                uiProgress.style.background = "var(--amber)";
+                
+                logTerminal("=========================================", "var(--amber)");
+                logTerminal("[NEOLITHIC FRAGMENTATION] - Acoustic structure compromised.", "var(--amber)", "bold");
+                logTerminal("Partials extracting to scattered nodes.", "var(--amber)");
+                logTerminal("Taylor series truncating. Spectral tearing imminent.", "#888");
+                logTerminal("=========================================", "var(--amber)");
+            }
+
+            // FASE 2: ROMEINSE TIJD (Bij 85% belasting)
+            if (ratio > 0.85 && historyPhase === 1) {
+                historyPhase = 2;
+                uiEra.innerText = "ROMEINSE TIJD";
+                uiEra.className = "stat-val bronze-clip"; // Metaal effect
+                uiFreq.className = "stat-val bronze-clip";
+                uiProgress.style.background = "#cd7f32"; // Brons kleur
+                
+                logTerminal("=========================================", "#cd7f32");
+                logTerminal("[ROMAN ERA DETECTED] - Bronze interface applied.", "#cd7f32", "bold");
+                logTerminal("Forcing maximum embouchure. DSP Clipping detected.", "#cd7f32");
+                logTerminal("Overdriving additive synthesis nodes.", "#888");
+                logTerminal("=========================================", "#cd7f32");
+            }
+
+            // UI Updates in de run-loop
+            uiCounter.innerText = counter.toString().padStart(8, '0');
+            uiProgress.style.width = `${ratio * 100}%`;
+            
+            if (historyPhase >= 1) {
+                // Voeg ruis toe aan de weergave om de afbrokkelende wiskunde te tonen
+                freq += (Math.random() * 2 - 1) * (ratio * 50);
+            }
+            uiFreq.innerText = Math.abs(freq).toFixed(3);
+
+            animationId = requestAnimationFrame(runSequence);
+        }
+
+        function triggerPompeiiCrash() {
+            cancelAnimationFrame(animationId);
+            historyPhase = 3;
+
+            // FASE 3: POMPEÏ - De Digitale As
+            document.body.className = "ash-state";
+            uiCounter.innerText = "79 AD";
+            uiEra.innerText = "POMPEÏ";
+            uiFreq.innerText = "0.000";
+            
+            logTerminal(" ", "#fff");
+            logTerminal("FATAL: 26-BIT LIMIT BREACHED", "#ff0000", "bold");
+            logTerminal("BROADCAST(): /panic_button", "#ff0000", "bold");
+            logTerminal("=========================================", "#ccc");
+            logTerminal("[79 AD] - MOUNT VESUVIUS OVERFLOW.", "#fff", "bold");
+            logTerminal("52 CHARONIA LAMPAS RELICS BURIED.", "#fff", "bold");
+            logTerminal("SYSTEM HALTED IN ASH.", "#fff", "bold");
+            logTerminal("=========================================", "#ccc");
+        }
+
+        btnStart.addEventListener('click', () => {
+            if (isRunning) return;
+            isRunning = true;
+            btnStart.disabled = true;
+            counter = 0;
+            historyPhase = 0;
+            
+            logTerminal("> Zenden /init naar SuperCollider...", "var(--blue)");
+            logTerminal("> Teller gestart. Tijdlijn opent...", "var(--blue)");
+            runSequence();
+        });
+    </script>
+</body>
+</html>

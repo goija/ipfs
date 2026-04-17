@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v72 // TAYLOR TRUNCATION BOMB</title>
+    <style>
+        :root { 
+            --amber: #ffbf00; --blue: #00d2ff; --bg: #050608; 
+            --panel: #0a0c0f; --stone: #1a1a1a; --alert: #ff2a2a;
+            --pure: #00ff66; --relic: #ff55ff;
+        }
+        
+        body { 
+            background: var(--bg); color: var(--amber); 
+            font-family: 'Courier New', monospace; 
+            padding: 40px 20px; margin: 0; 
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .header { text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 30px; width: 100%; max-width: 800px; }
+        .dashboard { background: var(--panel); border: 1px solid #333; padding: 30px; width: 100%; max-width: 800px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        .counter-display { grid-column: span 2; background: #000; border: 1px solid var(--blue); padding: 20px; text-align: center; }
+        .counter-label { color: var(--blue); font-size: 12px; letter-spacing: 2px; }
+        .counter-value { font-size: 48px; color: #fff; font-weight: bold; text-shadow: 0 0 15px var(--blue); margin-top: 10px; }
+        
+        .progress-container { grid-column: span 2; height: 10px; background: #111; border: 1px solid #333; width: 100%; }
+        .progress-fill { height: 100%; width: 0%; background: var(--pure); }
+
+        .stat-box { background: #000; border: 1px solid var(--stone); padding: 15px; }
+        .stat-label { font-size: 10px; color: #777; margin-bottom: 5px; }
+        .stat-val { font-size: 24px; color: #fff; }
+        
+        .terminal { grid-column: span 2; background: #000; border: 1px dashed #444; padding: 15px; height: 160px; overflow-y: auto; font-size: 11px; color: #666; display: flex; flex-direction: column; gap: 5px; }
+        
+        button { grid-column: span 2; background: #111; color: var(--amber); border: 1px solid var(--amber); padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: var(--amber); color: #000; }
+        
+        .taylor-terms { display: flex; gap: 5px; margin-top: 10px; }
+        .term-block { padding: 5px 10px; background: #111; border: 1px solid #333; font-size: 10px; color: #555; }
+        .term-active { background: rgba(0, 255, 102, 0.1); border-color: var(--pure); color: var(--pure); }
+        .term-failed { background: rgba(255, 42, 42, 0.1); border-color: var(--alert); color: var(--alert); text-decoration: line-through; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="letter-spacing: 3px; margin: 0; color: var(--blue);">VORTEX DSP OPTIMIZER v72</h2>
+        <div style="font-size: 11px; color: #777; margin-top: 5px;">41-TET DYNAMIC TONALITY // TAYLOR SERIES DEGRADATION</div>
+    </div>
+
+    <div class="dashboard">
+        <div class="counter-display">
+            <div class="counter-label">26-BIT AVALANCHE COUNTER</div>
+            <div class="counter-value" id="uiCounter">00000000</div>
+            <div class="taylor-terms" id="uiTerms">
+                <div class="term-block term-active" id="t0">O(1)</div>
+                <div class="term-block term-active" id="t1">O(n)</div>
+                <div class="term-block term-active" id="t2">O(n²)/3362</div>
+                <div class="term-block term-active" id="t3">O(n³)/413526</div>
+                <div class="term-block term-active" id="t4">O(n⁴)/67818264</div>
+            </div>
+        </div>
+
+        <div class="progress-container"><div class="progress-fill" id="uiProgress"></div></div>
+
+        <div class="stat-box">
+            <div class="stat-label">TAYLOR FREQUENTIE (Hz)</div>
+            <div class="stat-val" id="uiFreq" style="color: var(--pure);">220.000</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">WISKUNDIGE AFWIJKING (Hz)</div>
+            <div class="stat-val" id="uiError" style="color: #fff;">0.000</div>
+        </div>
+
+        <div class="terminal" id="uiTerminal">
+            <div>> DSP Matrix geladen. 41-TET Taylor-expansie actief.</div>
+        </div>
+
+        <button id="btnStart">START DSP STRESS TEST</button>
+    </div>
+
+    <script>
+        const uiCounter = document.getElementById('uiCounter');
+        const uiProgress = document.getElementById('uiProgress');
+        const uiFreq = document.getElementById('uiFreq');
+        const uiError = document.getElementById('uiError');
+        const uiTerminal = document.getElementById('uiTerminal');
+        const btnStart = document.getElementById('btnStart');
+
+        const MAX_26_BIT = 67108864;
+        const BASE_FREQ = 220.0;
+        const LN2 = Math.LN2;
+        
+        let counter = 0;
+        let animationId;
+        let activeTerms = 4;
+
+        function logTerminal(msg, color = "#666") {
+            const entry = document.createElement('div');
+            entry.style.color = color;
+            entry.innerText = `[${new Date().toISOString().substring(11, 23)}] ${msg}`;
+            uiTerminal.prepend(entry);
+            if (uiTerminal.children.length > 20) uiTerminal.lastChild.remove();
+        }
+
+        // De Polynominale DSP Berekening
+        function calculateTaylorFreq(n, terms) {
+            const x = (n * LN2) / 41;
+            let sum = 1; // O(1)
+            if (terms >= 1) sum += x; // O(n)
+            if (terms >= 2) sum += Math.pow(n * LN2, 2) / 3362; // O(n²)
+            if (terms >= 3) sum += Math.pow(n * LN2, 3) / 413526; // O(n³)
+            if (terms >= 4) sum += Math.pow(n * LN2, 4) / 67818264; // O(n⁴)
+            return BASE_FREQ * sum;
+        }
+
+        function runSequence() {
+            const increment = Math.max(1, Math.floor(Math.pow(counter / MAX_26_BIT, 2) * 200000) + 11);
+            counter += increment;
+
+            if (counter >= MAX_26_BIT) return;
+
+            const ratio = counter / MAX_26_BIT;
+            const step = counter % 41;
+
+            // Bepaal CPU Degradatie gebaseerd op counter druk
+            let newTerms = 4;
+            if (ratio > 0.85) newTerms = 1;      // Extreme CPU stress: stop na x
+            else if (ratio > 0.60) newTerms = 2; // Hoge CPU stress: stop bij x^2
+            else if (ratio > 0.35) newTerms = 3; // Lichte stress: stop bij x^3
+
+            if (newTerms !== activeTerms) {
+                activeTerms = newTerms;
+                document.getElementById(`t${activeTerms + 1}`).className = "term-block term-failed";
+                logTerminal(`[WARNING] CPU Load High. Truncating Taylor Series to O(n^${activeTerms})`, "var(--amber)");
+            }
+
+            // Bereken perfecte frequentie vs Taylor benadering
+            const trueFreq = BASE_FREQ * Math.pow(2, step / 41);
+            const taylorFreq = calculateTaylorFreq(step, activeTerms);
+            const error = trueFreq - taylorFreq;
+
+            uiCounter.innerText = counter.toString().padStart(8, '0');
+            uiProgress.style.width = `${ratio * 100}%`;
+            uiFreq.innerText = taylorFreq.toFixed(3);
+            uiError.innerText = error.toFixed(5);
+
+            if (activeTerms < 4) {
+                uiFreq.style.color = "var(--alert)";
+                uiError.style.color = "var(--amber)";
+            }
+
+            animationId = requestAnimationFrame(runSequence);
+        }
+
+        btnStart.addEventListener('click', () => {
+            counter = 0; activeTerms = 4;
+            document.querySelectorAll('.term-block').forEach(el => el.className = "term-block term-active");
+            logTerminal("Initiating Taylor-series DSP interpolation...", "var(--blue)");
+            runSequence();
+            btnStart.disabled = true;
+        });
+    </script>
+</body>
+</html>

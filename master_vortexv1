@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v104 // MASTER CONTROL</title>
+    <style>
+        :root { 
+            --cyan: #00d2ff; --magenta: #ff00ff; --amber: #ffbf00; 
+            --emerald: #00ea69; --danger: #ff0033; --bg: #010102; 
+            --panel: #06070a; --stone: #111;
+        }
+        
+        body { background: var(--bg); color: #fff; font-family: 'Courier New', monospace; margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+        .dashboard { background: var(--panel); border: 1px solid #333; padding: 20px; width: 100%; max-width: 1550px; display: grid; grid-template-columns: 350px 1fr 400px; gap: 20px; box-shadow: 0 0 50px rgba(0, 210, 255, 0.05); }
+        
+        .header { grid-column: span 3; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .header h1 { margin: 0; color: var(--cyan); letter-spacing: 5px; font-size: 22px; }
+
+        .card { background: #000; border: 1px solid #222; padding: 20px; position: relative; transition: 0.3s; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--stone); }
+        .card.active-cyan::before { background: var(--cyan); }
+        .card.active-magenta::before { background: var(--magenta); }
+        .card.active-emerald::before { background: var(--emerald); }
+
+        .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .value { font-size: 28px; font-weight: bold; margin: 10px 0; }
+        .sub { font-size: 12px; color: #888; }
+
+        .canvas-container { background: #000; border: 1px solid #222; position: relative; overflow: hidden; height: 100%; }
+        .overlay-label { position: absolute; top: 10px; left: 10px; z-index: 10; font-size: 10px; font-weight: bold; padding: 5px; border: 1px solid; background: rgba(0,0,0,0.8); }
+
+        .btn-action { background: transparent; border: 1px solid var(--cyan); color: var(--cyan); padding: 12px; width: 100%; cursor: pointer; font-family: inherit; font-weight: bold; margin-top: 10px; transition: 0.2s; }
+        .btn-action:hover { background: var(--cyan); color: #000; }
+        
+        .terminal { background: #000; border: 1px solid #222; padding: 15px; font-size: 11px; color: #555; height: 150px; overflow-y: auto; line-height: 1.6; }
+        .highlight { color: var(--emerald); }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <div class="header">
+            <h1>VORTEX v104 // DUAL-SPECTRUM MASTER</h1>
+            <button class="btn-action" id="btnPlay" onclick="togglePlayback()" style="width: auto; padding: 10px 30px;">▌▌ PAUZE SCANNER</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="card active-cyan">
+                <div class="label" style="color: var(--cyan);">Sonarnet Uplink</div>
+                <div style="color: var(--cyan); font-size: 13px; margin: 10px 0;">ws://127.0.0.1:1880/vortex</div>
+                <div class="sub">STATUS: <span style="color: var(--emerald);">READY</span></div>
+            </div>
+
+            <div class="card active-magenta">
+                <div class="label">Mersenne Pressure</div>
+                <div class="value" id="valNode">4</div>
+                <div class="sub">Harmonic Base</div>
+            </div>
+
+            <div class="card active-emerald">
+                <div class="label">Resonance Frequency</div>
+                <div class="value" id="valFreq" style="color: var(--emerald);">117.70 Hz</div>
+                <div id="hebLetter" style="font-size: 35px; color: var(--emerald); float: right; margin-top: -40px;">ב</div>
+            </div>
+        </div>
+
+        <div class="canvas-container">
+            <div class="overlay-label" style="color: var(--cyan); border-color: var(--cyan);">SONARNET RADAR v104</div>
+            <canvas id="sonarCanvas"></canvas>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="card active-emerald">
+                <div class="label" style="color: var(--emerald);">Chromatic Input</div>
+                <input type="file" id="imageUpload" style="margin: 10px 0; font-size: 10px; color: #888;">
+                <div class="canvas-container" style="height: 200px;">
+                    <canvas id="imageCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="terminal" id="terminalLog">
+                > v104 OS Online. Chromatic Resonator geladen.<br>
+                > Wachten op v104 dataset initiatie...
+            </div>
+        </div>
+    </div>
+
+<script>
+    const heb = ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ل','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'];
+    let audioCtx, mainGain, isPlaying = true;
+    let imgData = null, scanX = 0;
+    
+    const sonarCanvas = document.getElementById('sonarCanvas'), sCtx = sonarCanvas.getContext('2d');
+    const imageCanvas = document.getElementById('imageCanvas'), iCtx = imageCanvas.getContext('2d');
+
+    function initLayout() {
+        sonarCanvas.width = sonarCanvas.parentElement.clientWidth;
+        sonarCanvas.height = sonarCanvas.parentElement.clientHeight;
+        imageCanvas.width = imageCanvas.parentElement.clientWidth;
+        imageCanvas.height = imageCanvas.parentElement.clientHeight;
+    }
+
+    window.addEventListener('resize', initLayout);
+    initLayout();
+
+    document.getElementById('imageUpload').addEventListener('change', function(e) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                iCtx.drawImage(img, 0, 0, imageCanvas.width, imageCanvas.height);
+                imgData = iCtx.getImageData(0, 0, imageCanvas.width, imageCanvas.height);
+                logTerminal("<span class='highlight'>Dataset succesvol geïnjecteerd.</span>");
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    });
+
+    function logTerminal(m) {
+        const log = document.getElementById('terminalLog');
+        log.innerHTML = "> " + m + "<br>" + log.innerHTML;
+    }
+
+    function togglePlayback() {
+        isPlaying = !isPlaying;
+        document.getElementById('btnPlay').innerText = isPlaying ? "▌▌ PAUZE SCANNER" : "▶ START SCANNER";
+        document.getElementById('btnPlay').style.borderColor = isPlaying ? "var(--emerald)" : "var(--amber)";
+    }
+
+    function render() {
+        if (isPlaying) {
+            sCtx.fillStyle = "rgba(1, 1, 2, 0.2)";
+            sCtx.fillRect(0, 0, sonarCanvas.width, sonarCanvas.height);
+
+            // Radar circles
+            sCtx.strokeStyle = "rgba(0, 210, 255, 0.1)";
+            for(let i=1; i<8; i++) {
+                sCtx.beginPath();
+                sCtx.arc(sonarCanvas.width/2, sonarCanvas.height/2, i * 40, 0, Math.PI*2);
+                sCtx.stroke();
+            }
+
+            if (imgData) {
+                scanX = (scanX + 2) % imageCanvas.width;
+                // Simuleer data extractie
+                const mockFreq = (110 + (Math.random() * 15)).toFixed(2);
+                document.getElementById('valFreq').innerText = mockFreq + " Hz";
+                document.getElementById('hebLetter').innerText = heb[Math.floor(Math.random() * heb.length)];
+                
+                // Draw scan line
+                iCtx.putImageData(imgData, 0, 0);
+                iCtx.strokeStyle = "red";
+                iCtx.lineWidth = 2;
+                iCtx.beginPath();
+                iCtx.moveTo(scanX, 0);
+                iCtx.lineTo(scanX, imageCanvas.height);
+                iCtx.stroke();
+            }
+        }
+        requestAnimationFrame(render);
+    }
+
+    render();
+</script>
+</body>
+</html>

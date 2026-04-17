@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v72 // BOUSTROPHEDON DATA SCANNER</title>
+    <style>
+        :root { 
+            --amber: #ffbf00; --blue: #00d2ff; --bg: #050608; 
+            --panel: #0a0c0f; --stone: #1a1a1a; --alert: #ff2a2a;
+            --pure: #00ff66; --cols: 40;
+        }
+        
+        body { 
+            background: var(--bg); color: var(--amber); 
+            font-family: 'Courier New', monospace; 
+            padding: 20px; margin: 0; 
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .header { text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; width: 100%; max-width: 1200px; }
+        
+        .dashboard { 
+            background: var(--panel); border: 1px solid #333; padding: 20px; 
+            width: 100%; max-width: 1200px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        /* DATA INPUT ZONE */
+        .upload-zone {
+            grid-column: span 3; border: 2px dashed var(--blue); background: rgba(0, 210, 255, 0.05);
+            padding: 20px; text-align: center; cursor: pointer; transition: 0.3s;
+        }
+        .upload-zone:hover { background: rgba(0, 210, 255, 0.1); border-color: #fff; }
+        .upload-zone input[type="file"] { display: none; }
+
+        /* BOUSTROPHEDON MATRIX */
+        .matrix-container {
+            grid-column: span 3; background: #000; border: 1px solid #222;
+            padding: 10px; max-height: 400px; overflow-y: auto;
+            box-shadow: inset 0 0 20px #000;
+        }
+        .b-grid {
+            display: grid; 
+            grid-template-columns: repeat(var(--cols), 1fr); 
+            gap: 2px;
+        }
+        .b-cell {
+            aspect-ratio: 1; background: #111; color: #555;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 8px; overflow: hidden; border: 1px solid #1a1a1a;
+            transition: 0.3s; cursor: crosshair;
+        }
+        .b-cell:hover { transform: scale(1.5); z-index: 10; background: #222; color: #fff; border-color: var(--amber); }
+        .cell-data { color: var(--amber); }
+        .cell-alef { background: rgba(0, 255, 102, 0.2); color: var(--pure); border-color: var(--pure); font-weight: bold; box-shadow: 0 0 10px var(--pure); }
+        
+        /* TERMINAL & STATS */
+        .terminal {
+            grid-column: span 2; background: #000; border: 1px solid #222; 
+            padding: 15px; height: 150px; overflow-y: auto; font-size: 11px; color: #aaa;
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .terminal-line { line-height: 1.4; }
+        .log-sys { color: #888; }
+        .log-alef { color: var(--pure); font-weight: bold; }
+
+        .stats { display: flex; flex-direction: column; gap: 10px; }
+        .stat-box { background: #000; border: 1px solid var(--stone); padding: 15px; text-align: center; flex: 1; }
+        .stat-label { font-size: 10px; color: #777; margin-bottom: 5px; text-transform: uppercase;}
+        .stat-val { font-size: 24px; color: #fff; }
+
+        button {
+            grid-column: span 3; background: #111; color: var(--amber); border: 1px solid var(--amber); 
+            padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
+            opacity: 0.5; pointer-events: none;
+        }
+        button.active { opacity: 1; pointer-events: auto; background: rgba(255, 191, 0, 0.1); }
+        button.active:hover { background: var(--amber); color: #000; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="letter-spacing: 3px; margin: 0; color: var(--blue);">VORTEX BOUSTROPHEDON MATRIX v72</h2>
+        <div style="font-size: 11px; color: #777; margin-top: 5px;">TEXT-TO-GRID PARSER | GRAY-CODE RESONANCE SCANNER</div>
+    </div>
+
+    <div class="dashboard">
+        
+        <label class="upload-zone" id="dropZone">
+            <input type="file" id="fileInput" accept=".txt, .csv, .log, .html">
+            <div style="font-size: 18px; color: var(--blue); font-weight: bold;">[ LAAD DATA.TXT / LOG.TXT ]</div>
+            <div style="font-size: 11px; color: #666; margin-top: 10px;">Sleep SABIC, duck.ai of Vortex logbestanden hierheen</div>
+        </label>
+
+        <div class="matrix-container" id="matrixContainer">
+            <div class="b-grid" id="grid"></div>
+        </div>
+
+        <div class="terminal" id="terminal">
+            <div class="terminal-line log-sys">> Wacht op bestand-invoer om Boustrophedon-scan te starten...</div>
+        </div>
+
+        <div class="stats">
+            <div class="stat-box">
+                <div class="stat-label">DATA BLOKKEN</div>
+                <div class="stat-val" id="uiBlocks">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">ALEF NODES</div>
+                <div class="stat-val" id="uiNodes" style="color: var(--pure);">0</div>
+            </div>
+        </div>
+
+        <button id="btnExport">DOWNLOAD VORTEX_LOG.TXT</button>
+
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const grid = document.getElementById('grid');
+        const terminal = document.getElementById('terminal');
+        const uiBlocks = document.getElementById('uiBlocks');
+        const uiNodes = document.getElementById('uiNodes');
+        const btnExport = document.getElementById('btnExport');
+
+        const COLS = 40;
+        let logBuffer = [];
+        let alefCount = 0;
+
+        function writeLog(message, type = 'log-sys') {
+            const time = new Date().toISOString().substring(11, 23);
+            const line = `[${time}] ${message}`;
+            const div = document.createElement('div');
+            div.className = `terminal-line ${type}`;
+            div.innerText = line;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+            logBuffer.push(line);
+        }
+
+        function processData(text) {
+            grid.innerHTML = '';
+            logBuffer = [];
+            alefCount = 0;
+            
+            writeLog("> Analyseren van dataset...", "log-sys");
+            
+            // Splits de tekst op in blokken (woorden of korte datapunten)
+            const dataChunks = text.split(/\s+/).filter(chunk => chunk.length > 0);
+            uiBlocks.innerText = dataChunks.length;
+            
+            const numRows = Math.ceil(dataChunks.length / COLS);
+            writeLog(`> ${dataChunks.length} blokken gedetecteerd. Opbouwen van ${numRows} Boustrophedon rijen...`, "log-sys");
+
+            let renderIndex = 0;
+
+            // Boustrophedon Logica (Ossenploeg)
+            for (let row = 0; row < numRows; row++) {
+                const isEvenRow = (row % 2 === 0);
+                
+                for (let col = 0; col < COLS; col++) {
+                    // Bepaal de ware index in de 1D data array afhankelijk van de ploegrichting
+                    let dataIndex = isEvenRow ? (row * COLS + col) : (row * COLS + (COLS - 1 - col));
+                    
+                    if (dataIndex >= dataChunks.length) break;
+
+                    const chunk = dataChunks[dataIndex];
+                    
+                    // Bereken Gray Code & Alef Node resonantie (Mod 22)
+                    const g = dataIndex ^ (dataIndex >> 1);
+                    const isAlef = (g % 22 === 0);
+
+                    // Maak visuele cel
+                    const cell = document.createElement('div');
+                    cell.className = 'b-cell';
+                    cell.innerText = chunk.substring(0, 3); // Laat eerste 3 letters zien
+                    cell.title = `Index: ${dataIndex} | Gray: ${g} | Data: ${chunk}`;
+
+                    if (isAlef) {
+                        cell.classList.add('cell-alef');
+                        alefCount++;
+                        // Log alleen de Alef nodes om de terminal niet te overbelasten
+                        writeLog(`[ALEF NODE OP INDEX ${dataIndex}] G=${g} -> Data: "${chunk}"`, "log-alef");
+                    } else {
+                        cell.classList.add('cell-data');
+                    }
+
+                    // Gebruik flex 'order' om de cellen visueel van rechts naar links te dwingen in oneven rijen
+                    if (!isEvenRow) {
+                        cell.style.order = -col; 
+                    }
+
+                    grid.appendChild(cell);
+                    renderIndex++;
+                }
+            }
+
+            uiNodes.innerText = alefCount;
+            writeLog(`> MATRIX VOLTOOID. ${alefCount} Alef Nodes en Boustrophedon-pad gegenereerd.`, "log-sys");
+            enableExport();
+        }
+
+        // --- EXPORT ---
+        function enableExport() {
+            btnExport.classList.add('active');
+        }
+
+        btnExport.addEventListener('click', () => {
+            logBuffer.unshift("=========================================");
+            logBuffer.unshift("VORTEX BOUSTROPHEDON MATRIX - SCAN LOG");
+            logBuffer.unshift("=========================================\n");
+            const blob = new Blob([logBuffer.join('\n')], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `vortex_boustrophedon_log_${Date.now()}.txt`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        });
+
+        // --- FILE DRAG & DROP ---
+        fileInput.addEventListener('change', e => {
+            const file = e.target.files[0];
+            if (!file) return;
+            writeLog(`> Bestand ingeladen: ${file.name}`, "log-sys");
+            const reader = new FileReader();
+            reader.onload = ev => processData(ev.target.result);
+            reader.readAsText(file);
+        });
+
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = "#fff"; });
+        dropZone.addEventListener('dragleave', e => { e.preventDefault(); dropZone.style.borderColor = "var(--blue)"; });
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault();
+            dropZone.style.borderColor = "var(--blue)";
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change'));
+            }
+        });
+    </script>
+</body>
+</html>

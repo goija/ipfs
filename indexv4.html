@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v72 // 41-TET DYNAMIC TONALITY BOMB</title>
+    <style>
+        :root { 
+            --amber: #ffbf00; 
+            --blue: #00d2ff; 
+            --bg: #050608; 
+            --panel: #0a0c0f;
+            --stone: #1a1a1a;
+            --alert: #ff2a2a;
+            --pure: #00ff66;
+            --relic: #ff55ff; /* Speciale kleur voor antieke glitches */
+        }
+        
+        body { 
+            background: var(--bg); color: var(--amber); 
+            font-family: 'Courier New', monospace; 
+            padding: 40px 20px; margin: 0; 
+            display: flex; flex-direction: column; align-items: center;
+            overflow: hidden;
+        }
+
+        .header {
+            text-align: center; border-bottom: 1px solid #333; 
+            padding-bottom: 15px; margin-bottom: 30px; 
+            width: 100%; max-width: 800px;
+        }
+
+        .dashboard {
+            background: var(--panel); border: 1px solid #333; 
+            padding: 30px; box-shadow: 0 0 30px rgba(0,0,0,1);
+            width: 100%; max-width: 800px;
+            display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+            position: relative;
+        }
+
+        /* 26-BIT COUNTER DISPLAY */
+        .counter-display {
+            grid-column: span 2;
+            background: #000; border: 1px solid var(--blue);
+            padding: 20px; text-align: center; transition: 0.1s;
+        }
+        .counter-label { color: var(--blue); font-size: 12px; letter-spacing: 2px; }
+        .counter-value { 
+            font-size: 48px; color: #fff; font-weight: bold; 
+            text-shadow: 0 0 15px var(--blue); margin-top: 10px; 
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* PROGRESS BAR */
+        .progress-container {
+            grid-column: span 2; height: 10px; background: #111; 
+            border: 1px solid #333; width: 100%; position: relative;
+        }
+        .progress-fill { height: 100%; width: 0%; background: var(--pure); transition: background 0.3s; }
+
+        /* STAT BOXES */
+        .stat-box { background: #000; border: 1px solid var(--stone); padding: 15px; }
+        .stat-label { font-size: 10px; color: #777; margin-bottom: 5px; }
+        .stat-val { font-size: 24px; color: #fff; }
+        
+        .freq-val { color: var(--pure); text-shadow: 0 0 10px var(--pure); }
+        .jitter-val { color: var(--amber); }
+
+        /* OSC TERMINAL */
+        .terminal {
+            grid-column: span 2; background: #000; border: 1px dashed #444; 
+            padding: 15px; height: 160px; overflow-y: auto; font-size: 11px; color: #666;
+            display: flex; flex-direction: column; gap: 5px;
+        }
+
+        button {
+            grid-column: span 2; background: #111; color: var(--amber);
+            border: 1px solid var(--amber); padding: 15px; font-size: 16px;
+            font-family: inherit; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        button:hover { background: var(--amber); color: #000; }
+        button:disabled { border-color: #333; color: #333; cursor: not-allowed; }
+
+        .crash-state { animation: glitch 0.1s infinite; border-color: var(--alert) !important; color: var(--alert) !important; }
+        
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="letter-spacing: 3px; margin: 0; color: var(--blue);">VORTEX 41-TET SYNTHESIZER</h2>
+        <div style="font-size: 11px; color: #777; margin-top: 5px;">26-BIT ENGINE WITH ARCHAEOLOGICAL GLITCH INJECTION</div>
+    </div>
+
+    <div class="dashboard" id="dash">
+        
+        <div class="counter-display" id="uiCounterBox">
+            <div class="counter-label">26-BIT AVALANCHE COUNTER</div>
+            <div class="counter-value" id="uiCounter">00000000</div>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-fill" id="uiProgress"></div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">41-TET FREQUENTIE (Hz)</div>
+            <div class="stat-val freq-val" id="uiFreq">220.000</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">SPECTRAL JITTER / TEARING (%)</div>
+            <div class="stat-val jitter-val" id="uiJitter">0.000</div>
+        </div>
+
+        <div class="terminal" id="uiTerminal">
+            <div>> Systeem geladen. Wacht op activatie...</div>
+            <div>> Formule actief: f_n = f_0 * 2^(n/41)</div>
+            <div>> Temporal Echo Scanner: ACTIEF (Detectie op veelvouden van 40)</div>
+        </div>
+
+        <button id="btnStart">START 26-BIT SEQUENCE</button>
+    </div>
+
+    <script>
+        const uiCounter = document.getElementById('uiCounter');
+        const uiCounterBox = document.getElementById('uiCounterBox');
+        const uiProgress = document.getElementById('uiProgress');
+        const uiFreq = document.getElementById('uiFreq');
+        const uiJitter = document.getElementById('uiJitter');
+        const uiTerminal = document.getElementById('uiTerminal');
+        const btnStart = document.getElementById('btnStart');
+        const dash = document.getElementById('dash');
+
+        const MAX_26_BIT = 67108864; 
+        const BASE_FREQ = 220.0;     
+        const TET_DIVISIONS = 41;    
+
+        // De antieke representaties van 40
+        const ANCIENT_RELICS = [
+            { type: "Grieks Attisch", sym: "ΔΔΔΔ" },
+            { type: "Vroeg-Romeins", sym: "XXXX" },
+            { type: "Middeleeuws Romeins", sym: "XL" },
+            { type: "Klassiek Chinees", sym: "四十" }
+        ];
+
+        let counter = 0;
+        let animationId;
+        let isRunning = false;
+        let isGlitching = false;
+
+        function logTerminal(msg, color = "#666") {
+            const entry = document.createElement('div');
+            entry.style.color = color;
+            entry.innerText = `[${new Date().toISOString().substring(11, 23)}] ${msg}`;
+            uiTerminal.prepend(entry);
+            if (uiTerminal.children.length > 25) uiTerminal.lastChild.remove();
+        }
+
+        function runSequence() {
+            const prevCounter = counter;
+            
+            // Exponentiële toename
+            const increment = Math.max(1, Math.floor(Math.pow(counter / MAX_26_BIT, 2) * 200000) + 11);
+            counter += increment;
+
+            if (counter >= MAX_26_BIT) {
+                counter = MAX_26_BIT;
+                triggerCrash();
+                return;
+            }
+
+            const ratio = counter / MAX_26_BIT;
+
+            // 1. Bereken 41-TET frequentie
+            const step = counter % TET_DIVISIONS; 
+            let freq = BASE_FREQ * Math.pow(2, step / TET_DIVISIONS);
+
+            // 2. Bereken Spectral Tearing
+            const jitterFactor = Math.pow(ratio, 8); 
+            const jitterAmount = (Math.random() * 2 - 1) * (jitterFactor * 1500); 
+            freq += jitterAmount;
+
+            // --- DE ARCHEOLOGISCHE GLITCH INJECTIE ---
+            const prevMult40 = Math.floor(prevCounter / 40);
+            const currMult40 = Math.floor(counter / 40);
+
+            // Controleer of we een veelvoud van 40 zijn gepasseerd
+            if (currMult40 > prevMult40) {
+                // Hoe dichter bij de crash, hoe chaotischer de kans op een glitch
+                if (Math.random() > 0.6 + (ratio * 0.35)) {
+                    const relic = ANCIENT_RELICS[Math.floor(Math.random() * ANCIENT_RELICS.length)];
+                    triggerTemporalEcho(relic);
+                }
+            }
+
+            // --- STANDAARD UI UPDATES (Als we niet in een glitch-frame zitten) ---
+            if (!isGlitching) {
+                uiCounter.innerText = counter.toString().padStart(8, '0');
+                uiCounter.style.color = "#fff";
+                uiCounter.style.textShadow = "0 0 15px var(--blue)";
+                uiCounterBox.style.borderColor = "var(--blue)";
+            }
+
+            uiProgress.style.width = `${ratio * 100}%`;
+            uiFreq.innerText = Math.abs(freq).toFixed(3);
+            uiJitter.innerText = (jitterFactor * 100).toFixed(3);
+
+            // Kleurverschuiving naar Chaos
+            if (ratio > 0.8) {
+                uiFreq.style.color = 'var(--alert)';
+                uiFreq.style.textShadow = '0 0 15px var(--alert)';
+                uiProgress.style.background = 'var(--alert)';
+                if (Math.random() > 0.92 && !isGlitching) logTerminal(`[OSC] ERROR: Harmonic drift in node ${step}!`, "var(--alert)");
+            } else if (ratio > 0.5) {
+                uiFreq.style.color = 'var(--amber)';
+                uiFreq.style.textShadow = '0 0 10px var(--amber)';
+                uiProgress.style.background = 'var(--amber)';
+            } else {
+                if (Math.random() > 0.98 && !isGlitching) logTerminal(`[OSC] 41-TET Harmonic ${step} locked.`, "var(--pure)");
+            }
+
+            animationId = requestAnimationFrame(runSequence);
+        }
+
+        // Functie om de antieke cijfers op het scherm te slaan
+        function triggerTemporalEcho(relic) {
+            isGlitching = true;
+            
+            // Visual Update
+            uiCounter.innerText = relic.sym;
+            uiCounter.style.color = "var(--relic)";
+            uiCounter.style.textShadow = "0 0 30px var(--relic)";
+            uiCounterBox.style.borderColor = "var(--relic)";
+            
+            // Terminal Log
+            logTerminal(`[ECHO] Antiek Talstelsel Gevonden: ${relic.type} [ ${relic.sym} ]`, "var(--relic)");
+            
+            // Verwijder glitch na 50-100 milliseconden (een flits)
+            setTimeout(() => {
+                isGlitching = false;
+            }, 50 + Math.random() * 50);
+        }
+
+        function triggerCrash() {
+            cancelAnimationFrame(animationId);
+            uiCounter.innerText = "CRITICAL_ERR";
+            dash.classList.add('crash-state');
+            document.body.style.backgroundColor = "#220000";
+            
+            logTerminal("=========================================", "var(--alert)");
+            logTerminal("FATAL: 26-BIT OVERFLOW DETECTED", "var(--alert)");
+            logTerminal("[OSC] SENDING /system_crash TO SUPERCOLLIDER", "var(--alert)");
+            logTerminal("=========================================", "var(--alert)");
+        }
+
+        btnStart.addEventListener('click', () => {
+            if (isRunning) return;
+            isRunning = true;
+            btnStart.disabled = true;
+            counter = 0;
+            logTerminal("INITIALIZING 41-TET MATRIX...", "var(--blue)");
+            dash.classList.remove('crash-state');
+            document.body.style.backgroundColor = "var(--bg)";
+            runSequence();
+        });
+    </script>
+</body>
+</html>

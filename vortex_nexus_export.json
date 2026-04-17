@@ -1,0 +1,134 @@
+{
+    "stonehenge": {
+        "title": "Stonehenge",
+        "desc": "Primair zonne-anker. Midzomer as.",
+        "loc": "51.1789° N, -1.8262° W",
+        "azimuth": "50.4",
+        "grid": "[14, 3]",
+        "color": "#00ffcc",
+        "type": "polar"
+    },
+    "westminster": {
+        "title": "Westminster Abbey",
+        "desc": "Gotische as-startpunt (1245).",
+        "loc": "51.4975° N, -0.1357° W",
+        "azimuth": "72.4",
+        "grid": "[16, 6]",
+        "color": "#b026ff",
+        "type": "polar"
+    },
+    "glastonbury": {
+        "title": "Glastonbury Tor",
+        "desc": "St. Michael-leylijn knooppunt.",
+        "loc": "51.1446° N, 2.6985° W",
+        "azimuth": "60.5",
+        "grid": "[12, 5]",
+        "color": "#ff5555",
+        "type": "polar"
+    },
+    "montstmichel": {
+        "title": "Mont Saint-Michel",
+        "desc": "Continentaal Apollo-Michaël anker.",
+        "loc": "48.6360° N, 1.5114° W",
+        "azimuth": "60.5",
+        "grid": "[13, 8]",
+        "color": "#ff5555",
+        "type": "polar"
+    },
+    "externsteine": {
+        "title": "Externsteine",
+        "desc": "Zonne-observatorium. Germaans oer-anker.",
+        "loc": "51.8689° N, 8.9175° E",
+        "azimuth": "45.0",
+        "grid": "[18, 5]",
+        "color": "#aaff00",
+        "type": "polar"
+    },
+    "amsterdam": {
+        "title": "Oude Kerk Amsterdam",
+        "desc": "Heilig ankerpunt (1306).",
+        "loc": "52.3742° N, 4.8979° E",
+        "azimuth": "78.4",
+        "grid": "[16, 6]",
+        "color": "#ffcc00",
+        "type": "polar"
+    },
+    "domkerk": {
+        "title": "Domkerk Utrecht",
+        "desc": "Kathedraal-As centrum (1254).",
+        "loc": "52.0907° N, 5.1224° E",
+        "azimuth": "80.5",
+        "grid": "[16, 7]",
+        "color": "#b026ff",
+        "type": "polar"
+    },
+    "zwolle": {
+        "title": "Sint-Michaëlskerk Zwolle",
+        "desc": "Noordelijk Michaël-anker (1406).",
+        "loc": "52.5122° N, 6.0944° E",
+        "azimuth": "81.5",
+        "grid": "[18, 11]",
+        "color": "#00ffcc",
+        "type": "polar"
+    },
+    "gamuungell": {
+        "title": "Zon / Hond (De Poort)",
+        "desc": "De poort in het Oosten. Start van de G2 beweging.",
+        "loc": "Oost-As",
+        "azimuth": "108.0",
+        "grid": "[4, 40.4]",
+        "color": "#ff0000",
+        "type": "polar"
+    },
+    "leeuw_orde": {
+        "title": "Leeuw (Kosmische Orde)",
+        "desc": "De kamer van de kosmische orde in het raster.",
+        "loc": "Zuid-Oost Kwadrant",
+        "azimuth": "150.0",
+        "grid": "[Tijd-Domein]",
+        "color": "#ff33aa",
+        "type": "polar",
+        "params": {
+            "TIJD_VECTOR": "10:10u (150 graden)",
+            "STATUS": "Overgangszone naar Phi"
+        }
+    },
+    "gulden_as": {
+        "title": "De Gulden As (Phi Resonantie)",
+        "desc": "Het punt waar tijd overgaat in verhouding (100 × φ).",
+        "loc": "Zuid-Zuidwest Stuwwal",
+        "azimuth": "161.6",
+        "grid": "[4 x 40.4]",
+        "color": "#ffaa00",
+        "type": "polar",
+        "params": {
+            "G2_WAARDE": "161.6 (Geometrische Sleutel)",
+            "VERHOUDING": "100 × φ ≈ 161.8",
+            "HELLING": "1:3 As (18.4° / 180-161.6)",
+            "MODULATOR": "GRID.MOD 40.4",
+            "AUDIO_OSC": "Zuivere Gulden Resonantie"
+        }
+    },
+    "klokbeker": {
+        "title": "Klokbeker Grafheuvels",
+        "desc": "Fysieke landschapsankers die wiskundig 'zingen' in de matrix.",
+        "loc": "Heidevelden",
+        "azimuth": "161.6",
+        "grid": "[6D Matrix]",
+        "color": "#00ffcc",
+        "type": "polar",
+        "params": {
+            "RESONANTIE": "161.6° As",
+            "PATROON": "Natuurlijke Spiraal Groei"
+        }
+    },
+    "plotter": {
+        "title": "Kosmische Geometrie Plotter",
+        "desc": "17x17 rooster (Centrum 9,9). Toont de overgang van Hond (108°), Leeuw (150°) naar de Gulden As (161.6°).",
+        "loc": "Laren Stuwwal",
+        "azimuth": "Multi",
+        "grid": "[17 x 17]",
+        "color": "#ffffff",
+        "type": "cartesian"
+    }
+}

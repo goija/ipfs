@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v72 // ZERO-DEVIATION DATA SEQUENCER</title>
+    <style>
+        :root { --amber: #ffbf00; --blue: #00d2ff; --bg: #010305; --panel: rgba(5, 10, 15, 0.95); --pure: #00ff66; --bone: #e3dac9; }
+        body { background: var(--bg); color: var(--amber); font-family: 'Courier New', monospace; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; user-select: none; }
+        
+        .header { text-align: center; border-bottom: 1px solid #112233; padding-bottom: 15px; margin-bottom: 20px; width: 100%; max-width: 1000px; }
+        .dashboard { background: var(--panel); border: 1px solid #112233; padding: 30px; width: 100%; max-width: 1000px; display: flex; flex-direction: column; gap: 20px; box-shadow: 0 0 50px rgba(0, 255, 102, 0.05); }
+
+        .top-controls { display: flex; gap: 10px; }
+        button#initBtn { flex: 2; background: var(--pure); color: #000; border: none; padding: 20px; font-weight: bold; cursor: pointer; font-size: 16px; text-transform: uppercase; letter-spacing: 2px; }
+        
+        /* DATA.TXT UPLOAD KNOP */
+        .data-upload-btn {
+            flex: 1; background: rgba(0, 210, 255, 0.1); border: 1px dashed var(--blue); color: var(--blue);
+            display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px;
+            cursor: pointer; transition: 0.3s; letter-spacing: 2px; text-align: center;
+        }
+        .data-upload-btn:hover { background: var(--blue); color: #000; }
+        .data-upload-btn input[type="file"] { display: none; }
+        .data-upload-btn.disabled { opacity: 0.3; pointer-events: none; border-color: #333; color: #555; }
+
+        /* HARMONISCHE MICROSCOOP */
+        .microscope-panel { background: #000; border: 1px solid var(--pure); padding: 15px; display: none; flex-direction: column; gap: 10px; box-shadow: inset 0 0 20px rgba(0, 255, 102, 0.1); }
+        .microscope-title { font-size: 12px; color: var(--pure); text-transform: uppercase; letter-spacing: 2px; border-bottom: 1px dashed #224422; padding-bottom: 5px; }
+        .analyzer-row { display: grid; grid-template-columns: 1fr 2fr 3fr 2fr; gap: 10px; font-size: 12px; color: #aaa; padding: 5px 0; border-bottom: 1px solid #111; }
+        .analyzer-row.header-row { color: var(--pure); font-weight: bold; border-bottom: 1px solid #224422; }
+        .val-perfect { color: var(--pure); font-weight: bold; text-shadow: 0 0 5px var(--pure); }
+
+        /* VIRTUEEL TOETSENBORD */
+        .keyboard { display: flex; flex-direction: column; gap: 5px; background: #000; padding: 15px; border: 1px solid #112233; border-radius: 5px; display: none; }
+        .kb-row { display: flex; justify-content: center; gap: 5px; }
+        .key-btn {
+            background: #050505; border: 1px solid #223344; color: #445566; width: 40px; height: 40px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border-radius: 4px; font-weight: bold; font-size: 14px; transition: 0.1s;
+        }
+        .key-btn span { font-size: 8px; color: #334455; margin-top: 2px; }
+        .key-btn.active { background: var(--pure); color: #000; border-color: #fff; box-shadow: 0 0 20px var(--pure); transform: scale(0.95); }
+        .key-btn.active span { color: #000; }
+
+        /* STATS PANEL */
+        .stat-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; display: none; }
+        .stat-box { background: #000; border: 1px solid #112233; padding: 15px; text-align: center; }
+        .stat-label { font-size: 10px; color: #556677; margin-bottom: 5px; text-transform: uppercase; }
+        .stat-val { font-size: 24px; color: #fff; font-weight: bold; }
+
+        .terminal { background: #000; border: 1px dashed #224422; padding: 10px; height: 120px; overflow-y: auto; font-size: 12px; color: var(--pure); display: flex; flex-direction: column; gap: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="letter-spacing: 3px; margin: 0; color: var(--pure);">VORTEX // ZERO-DEVIATION DATA SEQUENCER</h2>
+        <div style="font-size: 11px; color: #777; margin-top: 5px;">DATA.TXT INGESTION // GEFORCEERDE REINE STEMMING // AUTOMATISCHE AVALANCHE</div>
+    </div>
+
+    <div class="dashboard">
+        
+        <div class="top-controls">
+            <button id="initBtn">1. WEK AUDIO ENGINE</button>
+            <label class="data-upload-btn disabled" id="uploadLabel">
+                2. [ LAAD DATA.TXT ]
+                <input type="file" id="fileInput" accept=".txt, .csv, .log">
+            </label>
+        </div>
+
+        <div class="microscope-panel" id="microscopePanel">
+            <div class="microscope-title">ABSOLUTE CENTS ANALYZER (ZONDER AFWIJKINGEN)</div>
+            <div id="analyzerContainer">
+                <div class="analyzer-row header-row">
+                    <div>INDEX (KEY)</div>
+                    <div>GEFORCEERDE RATIO</div>
+                    <div>EXACTE FREQUENTIE</div>
+                    <div>AFWIJKING (CENTS)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="keyboard" id="kbPanel">
+            <div class="kb-row" id="row1"></div>
+            <div class="kb-row" id="row2"></div>
+            <div class="kb-row" id="row3"></div>
+            <div class="kb-row" id="row4"></div>
+        </div>
+
+        <div class="stat-panel" id="statPanel">
+            <div class="stat-box"><div class="stat-label">DATA SEQUENCER PITCH</div><div class="stat-val" id="uiPitch" style="color: var(--pure);">-- Hz</div></div>
+            <div class="stat-box"><div class="stat-label">GELEZEN GETALLEN</div><div class="stat-val" id="uiVoices" style="color: var(--blue);">0</div></div>
+        </div>
+
+        <div class="terminal" id="terminal">
+            <div>> Systeem geladen. Wacht op initialisatie.</div>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx, masterGain, limiter, caveIR;
+        let activeVoices = new Map(); 
+        
+        // Exacte wiskundige ratio's (Zonder afwijkingen)
+        const PURE_INTERVALS = [
+            { name: "Unisono", ratio: 1/1, str: "1:1" },
+            { name: "Kleine Secunde", ratio: 16/15, str: "16:15" },
+            { name: "Grote Toon", ratio: 9/8, str: "9:8" },
+            { name: "Septimale Secunde", ratio: 8/7, str: "8:7" },
+            { name: "Reine Mineur Terts", ratio: 6/5, str: "6:5" },
+            { name: "Reine Majeur Terts", ratio: 5/4, str: "5:4" },
+            { name: "Reine Kwart", ratio: 4/3, str: "4:3" },
+            { name: "Harmonische Kwart", ratio: 11/8, str: "11:8" },
+            { name: "Reine Kwint", ratio: 3/2, str: "3:2" },
+            { name: "Reine Mineur Sext", ratio: 8/5, str: "8:5" },
+            { name: "Reine Majeur Sext", ratio: 5/3, str: "5:3" },
+            { name: "Harmonische Sext", ratio: 13/8, str: "13:8" },
+            { name: "Septimale Mineur Septiem", ratio: 7/4, str: "7:4" },
+            { name: "Reine Majeur Septiem", ratio: 15/8, str: "15:8" },
+            { name: "Octaaf", ratio: 2/1, str: "2:1" }
+        ];
+        
+        PURE_INTERVALS.forEach(p => p.cents = 1200 * Math.log2(p.ratio));
+
+        const kbLayout = [
+            ['1','2','3','4','5','6','7','8','9','0','-','='], 
+            ['q','w','e','r','t','y','u','i','o','p','[',']'], 
+            ['a','s','d','f','g','h','j','k','l',';',"'"],     
+            ['z','x','c','v','b','n','m',',','.','/']          
+        ];
+        
+        const keyMap = {};
+        const keyElements = {};
+        const indexToKey = {}; // Voor de sequencer om terug te mappen
+        let indexCounter = 0;
+
+        kbLayout.forEach((row, rIdx) => {
+            const rowDiv = document.getElementById(`row${rIdx + 1}`);
+            row.forEach(key => {
+                const idx = indexCounter++;
+                keyMap[key] = idx;
+                indexToKey[idx] = key;
+                
+                const btn = document.createElement('div');
+                btn.className = 'key-btn';
+                btn.id = `key-${key}`;
+                btn.innerHTML = `${key.toUpperCase()}<br><span>${idx}</span>`;
+                rowDiv.appendChild(btn);
+                keyElements[key] = btn;
+            });
+        });
+
+        function log(msg, color = "var(--pure)") {
+            const div = document.createElement('div');
+            div.style.color = color;
+            div.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            document.getElementById('terminal').prepend(div);
+        }
+
+        async function initAudio() {
+            if(audioCtx) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            limiter = audioCtx.createDynamicsCompressor();
+            limiter.threshold.setValueAtTime(-2, audioCtx.currentTime);
+            limiter.ratio.setValueAtTime(20, audioCtx.currentTime);
+            limiter.connect(audioCtx.destination);
+
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 1.0; 
+            masterGain.connect(limiter);
+
+            const rate = audioCtx.sampleRate, len = rate * 4.2;
+            caveIR = audioCtx.createBuffer(2, len, rate);
+            for(let c=0; c<2; c++) {
+                const d = caveIR.getChannelData(c);
+                for(let i=0; i<len; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(rate*0.8));
+            }
+        }
+
+        function updateMicroscope() {
+            const container = document.getElementById('analyzerContainer');
+            container.innerHTML = `
+                <div class="analyzer-row header-row">
+                    <div>INDEX (KEY)</div>
+                    <div>GEFORCEERDE RATIO</div>
+                    <div>EXACTE FREQUENTIE</div>
+                    <div>AFWIJKING (CENTS)</div>
+                </div>
+            `;
+
+            if (activeVoices.size === 0) {
+                container.innerHTML += `<div class="analyzer-row"><div colspan="4" style="text-align:center;">Wacht op invoer of data sequence...</div></div>`;
+                return;
+            }
+
+            activeVoices.forEach((voice, keyStr) => {
+                container.innerHTML += `
+                    <div class="analyzer-row">
+                        <div style="color:#fff; font-weight:bold;">${voice.idx} [${keyStr.toUpperCase()}]</div>
+                        <div style="color:var(--blue);">${voice.pureData.name} (${voice.pureData.str})</div>
+                        <div style="color:#fff;">${voice.exactFreq.toFixed(3)} Hz</div>
+                        <div class="val-perfect">+0.00 c (REIN)</div>
+                    </div>
+                `;
+            });
+        }
+
+        function triggerNote(keyStr) {
+            if(!audioCtx || activeVoices.has(keyStr)) return;
+            const idx = keyMap[keyStr];
+            if(idx === undefined) return;
+
+            const tetCents = idx * (1200 / 41);
+            const octave = Math.floor(tetCents / 1200);
+            const normalizedTetCents = tetCents % 1200;
+
+            let closestPure = PURE_INTERVALS[0];
+            let minDiff = Math.abs(normalizedTetCents - PURE_INTERVALS[0].cents);
+
+            PURE_INTERVALS.forEach(pure => {
+                const diff = Math.abs(normalizedTetCents - pure.cents);
+                if (diff < minDiff) {
+                    closestPure = pure;
+                    minDiff = diff;
+                }
+            });
+
+            const exactFreq = 110.0 * closestPure.ratio * Math.pow(2, octave);
+
+            keyElements[keyStr].classList.add('active');
+            document.getElementById('uiPitch').innerText = exactFreq.toFixed(3) + " Hz";
+
+            const osc = audioCtx.createOscillator();
+            osc.type = 'sawtooth';
+            osc.frequency.value = exactFreq;
+
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.value = exactFreq * 1.5;
+            filter.Q.value = 3.0; 
+
+            const env = audioCtx.createGain();
+            env.gain.setValueAtTime(0, audioCtx.currentTime);
+            env.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
+
+            const conv = audioCtx.createConvolver();
+            conv.buffer = caveIR;
+
+            osc.connect(filter);
+            filter.connect(env);
+            env.connect(masterGain);
+            env.connect(conv).connect(masterGain);
+
+            osc.start();
+
+            activeVoices.set(keyStr, { osc, env, idx: idx, pureData: closestPure, exactFreq: exactFreq });
+            updateMicroscope();
+        }
+
+        function releaseNote(keyStr) {
+            const voice = activeVoices.get(keyStr);
+            if(!voice) return;
+
+            if(keyElements[keyStr]) keyElements[keyStr].classList.remove('active');
+
+            voice.env.gain.cancelScheduledValues(audioCtx.currentTime);
+            voice.env.gain.setValueAtTime(voice.env.gain.value, audioCtx.currentTime);
+            voice.env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.0); 
+
+            voice.osc.stop(audioCtx.currentTime + 2.1);
+            activeVoices.delete(keyStr);
+            updateMicroscope();
+        }
+
+        // --- MANUELE INPUT ---
+        window.addEventListener('keydown', (e) => {
+            if(e.repeat) return;
+            const k = e.key.toLowerCase();
+            if(keyMap[k] !== undefined) triggerNote(k);
+        });
+        window.addEventListener('keyup', (e) => {
+            const k = e.key.toLowerCase();
+            if(keyMap[k] !== undefined) releaseNote(k);
+        });
+
+        // --- DATA.TXT SEQUENCER LOGICA ---
+        const fileInput = document.getElementById('fileInput');
+        
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            log(`> Data geladen: ${file.name}. Analyseren...`, "var(--blue)");
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const text = event.target.result;
+                // Haal alle getallen uit de tekst met een Regex
+                const rawNumbers = text.match(/\d+/g);
+                if (!rawNumbers) {
+                    log("[ERROR] Geen numerieke data gevonden in bestand.", "var(--amber)");
+                    return;
+                }
+                
+                // Beperk tot toetsenbord index bereik (0-44)
+                const sequence = rawNumbers.map(n => parseInt(n) % 45);
+                document.getElementById('uiVoices').innerText = sequence.length;
+                log(`> ${sequence.length} datapunten geëxtraheerd. Start Autoplay Sequence.`, "var(--blue)");
+                
+                playDataSequence(sequence);
+            };
+            reader.readAsText(file);
+        });
+
+        function playDataSequence(sequence) {
+            let i = 0;
+            const speed = 250; // ms per stap (kan sneller of trager)
+            
+            const seqInterval = setInterval(() => {
+                if (i >= sequence.length) {
+                    clearInterval(seqInterval);
+                    log("> Data sequence voltooid.", "var(--blue)");
+                    return;
+                }
+
+                const targetIdx = sequence[i];
+                const keyStr = indexToKey[targetIdx];
+                
+                triggerNote(keyStr);
+                // Laat de noot na korte tijd weer los voor articulatie
+                setTimeout(() => releaseNote(keyStr), speed * 0.8);
+
+                i++;
+            }, speed);
+        }
+
+        // --- INITIALISATIE ---
+        document.getElementById('initBtn').onclick = async () => {
+            await initAudio();
+            document.getElementById('initBtn').style.display = "none";
+            document.getElementById('uploadLabel').classList.remove('disabled');
+            document.getElementById('microscopePanel').style.display = "flex";
+            document.getElementById('kbPanel').style.display = "flex";
+            document.getElementById('statPanel').style.display = "grid";
+            updateMicroscope();
+            log("> AUDIO SYSTEEM ONLINE. Selecteer nu een data.txt bestand om te sequencen.");
+        };
+    </script>
+</body>
+</html>

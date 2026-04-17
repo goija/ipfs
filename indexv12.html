@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>VORTEX // PUTUTU PM-ENGINE v72</title>
+    <style>
+        :root { --blue: #00d2ff; --amber: #ffbf00; --bg: #050608; --panel: #0a101a; --pure: #39ff14; }
+        body { background: var(--bg); color: var(--blue); font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .dashboard { background: var(--panel); border: 1px solid #112233; padding: 30px; width: 100%; max-width: 800px; box-shadow: 0 0 30px rgba(0,210,255,0.2); display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .header { text-align: center; grid-column: span 2; border-bottom: 1px solid #223344; padding-bottom: 10px; }
+        .stat-box { background: #000; border: 1px solid #223344; padding: 15px; text-align: center; }
+        .stat-label { font-size: 10px; color: #667788; text-transform: uppercase; margin-bottom: 5px; }
+        .stat-val { font-size: 22px; color: #fff; font-weight: bold; }
+        .slider-container { grid-column: span 2; padding: 20px 0; }
+        input[type=range] { width: 100%; cursor: pointer; accent-color: var(--amber); }
+        button { grid-column: span 2; background: #000; color: var(--pure); border: 1px solid var(--pure); padding: 20px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: var(--pure); color: #000; box-shadow: 0 0 20px var(--pure); }
+        .terminal { grid-column: span 2; background: #000; border: 1px dashed #334455; padding: 10px; height: 100px; overflow-y: auto; font-size: 11px; color: #667788; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2 style="margin:0; letter-spacing: 4px;">PUTUTU PM-ENGINE</h2>
+    <p style="font-size: 11px; color: var(--amber);">ARCHAEO-ACOUSTIC MODEL // CHAVÍN DE HUÁNTAR 110Hz</p>
+</div>
+
+<div class="dashboard">
+    <div class="slider-container">
+        <label class="stat-label">41-TET STAP (n) / MERSENNE INDEX</label>
+        <input type="range" id="stepSlider" min="0" max="40" value="0">
+    </div>
+
+    <div class="stat-box">
+        <div class="stat-label">FREQUENTIE (f_n)</div>
+        <div class="stat-val" id="uiFreq">110.00 Hz</div>
+    </div>
+
+    <div class="stat-box">
+        <div class="stat-label">CENTS (Kalmeijer)</div>
+        <div class="stat-val" id="uiCents" style="color: var(--amber);">0.00 c</div>
+    </div>
+
+    <div class="stat-box">
+        <div class="stat-label">RESONANTIE (Q)</div>
+        <div class="stat-val" id="uiQ">50.0</div>
+    </div>
+
+    <div class="stat-box">
+        <div class="stat-label">DECAY (Adem)</div>
+        <div class="stat-val" id="uiDecay">1.20s</div>
+    </div>
+
+    <div class="terminal" id="terminal">
+        <div>> Pututu Engine Standby.</div>
+        <div>> Grondtoon vergrendeld op 110 Hz.</div>
+    </div>
+
+    <button id="btnPlay">>> TRIGGER LUCHTSTROOM (EXCITATION)</button>
+</div>
+
+<script>
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    const BASE_FREQ = 110.0; // Archeo-akoestische basis Chavín
+
+    const slider = document.getElementById('stepSlider');
+    const btn = document.getElementById('btnPlay');
+    const terminal = document.getElementById('terminal');
+
+    function log(msg) {
+        const d = document.createElement('div');
+        d.innerText = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        terminal.prepend(d);
+    }
+
+    // --- Physical Modeling Engine ---
+    async function playPututu() {
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+        const n = parseInt(slider.value);
+        
+        // 1. Wiskunde: 41-TET en Cents
+        const freq = BASE_FREQ * Math.pow(2, n / 41);
+        const cents = (n / 41) * 1200;
+        
+        // 2. Mersenne Dynamiek: Q en Decay schalen met de stap
+        const qFactor = 40 + (n * 10); // Hogere stappen = scherpere resonantie
+        const decayTime = 0.5 + (n * 0.1); // Hogere stappen = langere adem
+
+        // Update UI
+        document.getElementById('uiFreq').innerText = freq.toFixed(2) + " Hz";
+        document.getElementById('uiCents').innerText = cents.toFixed(2) + " c";
+        document.getElementById('uiQ').innerText = qFactor.toFixed(1);
+        document.getElementById('uiDecay').innerText = decayTime.toFixed(2) + "s";
+
+        log(`Trigger stap ${n}: ${freq.toFixed(2)}Hz (41-TET)`);
+
+        // --- Geluidssynthese (PM) ---
+        
+        // A. EXCITATIE: Witte ruis burst
+        const bufferSize = audioCtx.sampleRate * 0.05; // 50ms burst
+        const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const output = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+
+        const noiseSrc = audioCtx.createBufferSource();
+        noiseSrc.buffer = noiseBuffer;
+
+        // B. RESONATOR: Parallelle Filterbank
+        const filterMixer = audioCtx.createGain();
+        const masterEnv = audioCtx.createGain();
+        
+        // Formanten van een schelp (benadering via harmonischen)
+        const formants = [1, 2.7, 4.3, 5.8];
+        formants.forEach(fMult => {
+            const bp = audioCtx.createBiquadFilter();
+            bp.type = 'bandpass';
+            bp.frequency.value = freq * fMult;
+            bp.Q.value = qFactor;
+            
+            noiseSrc.connect(bp);
+            bp.connect(filterMixer);
+        });
+
+        // C. ENVELOPE (Ademhaling)
+        masterEnv.gain.setValueAtTime(0, audioCtx.currentTime);
+        masterEnv.gain.linearRampToValueAtTime(0.8, audioCtx.currentTime + 0.02);
+        masterEnv.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decayTime);
+
+        filterMixer.connect(masterEnv);
+        masterEnv.connect(audioCtx.destination);
+
+        noiseSrc.start();
+        noiseSrc.stop(audioCtx.currentTime + decayTime);
+    }
+
+    btn.addEventListener('click', playPututu);
+</script>
+</body>
+</html>

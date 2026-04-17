@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v72 // PUTUTU PM-ENGINE</title>
+    <style>
+        :root { 
+            --amber: #ffbf00; --blue: #00d2ff; --bg: #050608; 
+            --panel: #0a0c0f; --stone: #1a1a1a; --alert: #ff2a2a;
+            --pure: #00ff66;
+        }
+        
+        body { 
+            background: var(--bg); color: var(--amber); 
+            font-family: 'Courier New', monospace; 
+            padding: 40px 20px; margin: 0; 
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .header { text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 30px; width: 100%; max-width: 800px; }
+        
+        .dashboard { 
+            background: var(--panel); border: 1px solid #333; padding: 30px; 
+            width: 100%; max-width: 800px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; 
+            box-shadow: 0 0 40px rgba(0,0,0,1);
+        }
+
+        /* CONTROLS */
+        .controls-panel { grid-column: span 2; display: flex; flex-direction: column; gap: 20px; background: #000; padding: 20px; border: 1px solid var(--blue); }
+        
+        .control-group { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed #333; padding-bottom: 10px; }
+        .control-label { color: var(--blue); font-size: 14px; font-weight: bold; }
+        
+        input[type="range"] { width: 60%; cursor: pointer; accent-color: var(--amber); }
+        
+        /* CHECKBOX CUSTOM */
+        .checkbox-container { display: flex; align-items: center; gap: 10px; color: var(--pure); font-size: 14px; cursor: pointer; }
+        input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--pure); cursor: pointer; }
+
+        /* STAT BOXES */
+        .stat-box { background: #000; border: 1px solid var(--stone); padding: 15px; text-align: center; }
+        .stat-label { font-size: 10px; color: #777; margin-bottom: 5px; text-transform: uppercase; }
+        .stat-val { font-size: 24px; color: #fff; }
+        .highlight { color: var(--amber); }
+
+        .terminal { 
+            grid-column: span 2; background: #000; border: 1px dashed #444; 
+            padding: 15px; height: 160px; overflow-y: auto; font-size: 12px; color: #666; 
+            display: flex; flex-direction: column; gap: 5px; line-height: 1.5;
+        }
+        
+        button { 
+            grid-column: span 2; background: #111; color: var(--amber); border: 1px solid var(--amber); 
+            padding: 20px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.2s; 
+        }
+        button:hover { background: var(--amber); color: #000; box-shadow: 0 0 20px rgba(255,191,0,0.5); }
+        button:active { transform: scale(0.98); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="letter-spacing: 3px; margin: 0; color: var(--blue);">PUTUTU PHYSICAL MODELING ENGINE</h2>
+        <div style="font-size: 11px; color: #777; margin-top: 5px;">ARCHAEO-ACOUSTICS // MERSENNE PRIME COUPLING // CHAVÍN 110Hz</div>
+    </div>
+
+    <div class="dashboard">
+        
+        <div class="controls-panel">
+            <div class="control-group">
+                <span class="control-label">MERSENNE NODE INDEX (0-15)</span>
+                <input type="range" id="nodeSlider" min="0" max="15" value="0">
+                <span id="nodeDisplay" style="color: #fff; font-weight: bold; width: 30px; text-align: right;">0</span>
+            </div>
+            
+            <label class="checkbox-container">
+                <input type="checkbox" id="useIR" checked>
+                ACTIVEER MEGALITISCHE GROT-RESONANTIE (SYNTHETIC IR)
+            </label>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">MERSENNE EXPONENT (p)</div>
+            <div class="stat-val" id="uiExponent" style="color: var(--blue);">M₂</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">FILTER RESONANTIE (Q)</div>
+            <div class="stat-val highlight" id="uiQ">0.0</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">DECAY TIME (Adem)</div>
+            <div class="stat-val" id="uiDecay" style="color: #fff;">0.0s</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">BASE FREQUENTIE</div>
+            <div class="stat-val" id="uiFreq" style="color: var(--pure);">110 Hz</div>
+        </div>
+
+        <button id="btnPlay">>> PLAY CHARONIA LAMPAS / PUTUTU</button>
+
+        <div class="terminal" id="terminal">
+            <div>> Pututu PM-Engine geladen.</div>
+            <div>> Basisresonantie vergrendeld op 110 Hz (Chavín de Huántar).</div>
+            <div>> Selecteer een node en trigger de luchtstroom.</div>
+        </div>
+
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Eerste 16 Mersenne priem-exponenten (p waarden in 2^p - 1)
+        const MERSENNE_EXPONENTS = [2, 3, 5, 7, 13, 17, 19, 31, 61, 89, 107, 127, 521, 607, 1279, 2281];
+        
+        let syntheticCaveIR = null;
+
+        const btnPlay = document.getElementById('btnPlay');
+        const nodeSlider = document.getElementById('nodeSlider');
+        const useIRCheckbox = document.getElementById('useIR');
+        const terminal = document.getElementById('terminal');
+
+        function logTerminal(msg, color = "#666") {
+            const entry = document.createElement('div');
+            entry.style.color = color;
+            entry.innerText = `[${new Date().toISOString().substring(11, 23)}] ${msg}`;
+            terminal.appendChild(entry);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // --- SYNTHETISCHE IMPULSE RESPONSE (CAVE IR) ---
+        // Genereert wiskundig de galm van een ondergrondse stenen kamer
+        function generateCaveIR() {
+            logTerminal("> Genereren van wiskundige Cave Impulse Response...", "#888");
+            const rate = audioCtx.sampleRate;
+            const length = rate * 4.0; // 4 seconden galm
+            const impulse = audioCtx.createBuffer(2, length, rate);
+            
+            for (let channel = 0; channel < 2; channel++) {
+                const channelData = impulse.getChannelData(channel);
+                for (let i = 0; i < length; i++) {
+                    const t = i / rate;
+                    // Exponentiële decay van witte ruis simuleert donkere reflecties
+                    channelData[i] = (Math.random() * 2 - 1) * Math.exp(-t * 3.5);
+                }
+            }
+            logTerminal("> Cave IR Buffer in het geheugen geladen.", "var(--pure)");
+            return impulse;
+        }
+
+        // --- DE PHYSICAL MODELING ENGINE ---
+        async function playPututu() {
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+            if (!syntheticCaveIR) syntheticCaveIR = generateCaveIR();
+
+            // 1. Mersenne Wiskunde ophalen via de UI Slider
+            const nodeIndex = parseInt(nodeSlider.value);
+            const p = MERSENNE_EXPONENTS[nodeIndex];
+
+            // 2. Parameters berekenen (De Dynamiek)
+            // Hoe zwaarder de Mersenne exponent, hoe hoger de Q en hoe langer de adem.
+            // (We schalen de extremere getallen iets terug om audio-glitches te voorkomen)
+            const qValue = Math.min(30 + (p * 0.5), 800); 
+            const decayTime = Math.min(0.1 + (p * 0.005), 8.0); // max 8 sec
+            const baseFreq = 110 + (nodeIndex * 2.5); // Lichte toonverschuiving per node
+
+            // Update UI
+            document.getElementById('uiExponent').innerText = `M${p}`;
+            document.getElementById('uiQ').innerText = qValue.toFixed(1);
+            document.getElementById('uiDecay').innerText = decayTime.toFixed(2) + "s";
+            document.getElementById('uiFreq').innerText = baseFreq.toFixed(1) + " Hz";
+
+            logTerminal(`[EXCITATION] Node ${nodeIndex} (p=${p}) getriggerd. Luchtstroom geïnjecteerd.`, "var(--amber)");
+
+            // 3. EXCITATIE: Witte ruis generator (Burst)
+            const bufferSize = audioCtx.sampleRate * Math.max(decayTime, 1.0); // Minimaal 1 sec buffer
+            const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) {
+                output[i] = Math.random() * 2 - 1; // Pure Witte Ruis
+            }
+
+            const noiseSource = audioCtx.createBufferSource();
+            noiseSource.buffer = noiseBuffer;
+
+            // 4. ENVELOPE: De ademhaling
+            const envelope = audioCtx.createGain();
+            envelope.gain.setValueAtTime(0, audioCtx.currentTime);
+            // Snelle aanzet (attack) van de blazer
+            envelope.gain.linearRampToValueAtTime(1.5, audioCtx.currentTime + 0.05); 
+            // Exponentiële afname (de adem die wegsterft)
+            envelope.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decayTime);
+
+            // 5. RESONATOR: Parallelle Biquad Filters (De schelpholte)
+            // Formanten simuleren de spiraalstructuur van de hoorn
+            const formants = [1, 2.7, 4.3, 5.8]; 
+            const filterMixer = audioCtx.createGain();
+            filterMixer.gain.value = 1.0 / formants.length; // Voorkom clipping
+
+            formants.forEach((ratio) => {
+                const bandpass = audioCtx.createBiquadFilter();
+                bandpass.type = 'bandpass';
+                bandpass.frequency.value = baseFreq * ratio;
+                bandpass.Q.value = qValue; // Mersenne gekoppelde resonantie!
+
+                envelope.connect(bandpass);
+                bandpass.connect(filterMixer);
+            });
+
+            // 6. ROUTING & CAVE IR
+            noiseSource.connect(envelope);
+
+            if (useIRCheckbox.checked) {
+                // Convolution Reverb (De Megalitische Grot)
+                const convolver = audioCtx.createConvolver();
+                convolver.buffer = syntheticCaveIR;
+                
+                // Dry / Wet mix
+                filterMixer.connect(convolver);
+                convolver.connect(audioCtx.destination); // Wet
+                
+                const dryGain = audioCtx.createGain();
+                dryGain.gain.value = 0.5;
+                filterMixer.connect(dryGain);
+                dryGain.connect(audioCtx.destination); // Dry
+                
+                logTerminal(`> Convolution Matrix Actief. Outputting through Bandpass Array...`, "var(--blue)");
+            } else {
+                filterMixer.connect(audioCtx.destination);
+            }
+
+            // Fire!
+            noiseSource.start();
+        }
+
+        // Events
+        nodeSlider.addEventListener('input', (e) => {
+            document.getElementById('nodeDisplay').innerText = e.target.value;
+        });
+
+        btnPlay.addEventListener('click', playPututu);
+
+    </script>
+</body>
+</html>

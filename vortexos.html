@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v89 // OMNI-MATRIX ENGINE</title>
+    <style>
+        :root { 
+            --cyan: #00d2ff; --magenta: #ff00ff; --amber: #ffbf00; 
+            --emerald: #00ea69; --bg: #030405; --panel: #080a0e;
+            --stone: #1a1a1a; --danger: #ff0040;
+        }
+        
+        body { 
+            background: var(--bg); color: #fff; font-family: 'Courier New', monospace; 
+            margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center;
+        }
+
+        /* Boot Screen */
+        #bootScreen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(3, 4, 5, 0.95); display: flex; justify-content: center; align-items: center;
+            z-index: 100; backdrop-filter: blur(10px);
+        }
+        .btn-boot {
+            background: transparent; border: 2px solid var(--cyan); color: var(--cyan);
+            padding: 20px 40px; font-size: 24px; font-family: inherit; font-weight: bold;
+            cursor: pointer; letter-spacing: 4px; transition: 0.3s; text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(0, 210, 255, 0.2);
+        }
+        .btn-boot:hover { background: var(--cyan); color: #000; box-shadow: 0 0 40px rgba(0, 210, 255, 0.6); }
+
+        /* Dashboard Layout */
+        .dashboard {
+            background: var(--panel); border: 1px solid #222; padding: 20px; 
+            width: 100%; max-width: 1400px; display: grid; grid-template-columns: 300px 1fr 350px; gap: 20px;
+            box-shadow: 0 0 50px rgba(0, 210, 255, 0.05); filter: blur(4px); transition: 0.5s filter;
+        }
+
+        .header { grid-column: span 3; text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .header h1 { margin: 0; color: var(--cyan); letter-spacing: 5px; font-size: 24px; }
+
+        /* Columns */
+        .panel-col { display: flex; flex-direction: column; gap: 15px; }
+
+        /* Cards */
+        .card { background: #000; border: 1px solid #222; padding: 15px; position: relative; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--stone); }
+        .card.active-magenta::before { background: var(--magenta); box-shadow: 0 0 10px var(--magenta); }
+        .card.active-amber::before { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+        .card.active-emerald::before { background: var(--emerald); box-shadow: 0 0 10px var(--emerald); }
+
+        .label { font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 5px; }
+        .value { font-size: 20px; font-weight: bold; color: #fff; }
+        .sub { font-size: 11px; color: #888; margin-top: 3px;}
+
+        .crypto-box { display: flex; align-items: center; justify-content: space-between; }
+        .heb-letter { font-size: 40px; color: var(--amber); line-height: 1; text-shadow: 0 0 20px rgba(255,191,0,0.4); }
+
+        /* Visuals (Middle) */
+        .canvas-container { 
+            background: #000; border: 1px solid #222; height: 350px; 
+            position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center;
+        }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .overlay-label { position: absolute; top: 10px; left: 10px; z-index: 10; font-size: 10px; color: var(--cyan); font-weight: bold; }
+
+        .bach-stream { background: #000; border: 1px dashed #444; padding: 15px; font-size: 12px; color: #555; line-height: 1.8; }
+        .note { display: inline-block; width: 22px; text-align: center; }
+        .note.active { color: #000; background: var(--cyan); font-weight: bold; box-shadow: 0 0 10px var(--cyan); }
+
+        /* Data Integrator (Right) */
+        textarea {
+            width: 100%; height: 120px; background: #050505; border: 1px solid #333; color: var(--emerald);
+            font-family: 'Courier New', monospace; font-size: 11px; padding: 8px; box-sizing: border-box; resize: none;
+            outline: none;
+        }
+        textarea:focus { border-color: var(--emerald); }
+        
+        .btn-process {
+            background: var(--emerald); color: #000; border: none; padding: 12px; width: 100%;
+            cursor: pointer; font-family: inherit; font-weight: bold; letter-spacing: 1px; margin-top: 5px;
+            transition: 0.2s;
+        }
+        .btn-process:hover { background: #00ff73; box-shadow: 0 0 15px rgba(0, 234, 105, 0.4); }
+
+        .data-viz { height: 180px; background: #000; border: 1px solid #222; position: relative; margin-top: 10px; }
+
+        .terminal { background: #000; border: 1px solid #222; padding: 10px; font-size: 10px; color: #777; height: 120px; overflow-y: auto; line-height: 1.4; }
+        .highlight { color: var(--cyan); }
+        .highlight-green { color: var(--emerald); }
+    </style>
+</head>
+<body>
+
+    <div id="bootScreen">
+        <button class="btn-boot" onclick="bootSystem()">BOOT VORTEX OS</button>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <div class="header">
+            <h1>VORTEX v89 // OMNI-MATRIX ENGINE</h1>
+            <div style="font-size: 11px; color: #666; margin-top: 5px;">CELLULAR AUTOMATON . SONAR RADAR . ELS CRYPTOGRAPHY . DATA PARSER</div>
+        </div>
+
+        <div class="panel-col">
+            <div class="card active-magenta">
+                <div class="label">Actieve Node (Mersenne)</div>
+                <div class="value" id="valNode">0</div>
+                <div class="sub" id="valCluster">Systeem Standby</div>
+            </div>
+            
+            <div class="card active-cyan">
+                <div class="label">Akoestische Fysica</div>
+                <div class="crypto-box">
+                    <div>
+                        <div class="value" id="valFreq">0.00 Hz</div>
+                        <div class="sub" id="valQ">Q: 0 | Decay: 0.0s</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card active-amber">
+                <div class="label">Thora-Code Resonantie</div>
+                <div class="crypto-box">
+                    <div>
+                        <div class="value" style="color:var(--amber);" id="valG">G: 0</div>
+                        <div class="sub" id="valMod">Mod 22: 0</div>
+                    </div>
+                    <div class="heb-letter" id="hebLetter">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-col">
+            <div class="canvas-container">
+                <div class="overlay-label">SONAR RADAR // PUTUTU ENGINE</div>
+                <canvas id="sonarCanvas"></canvas>
+            </div>
+
+            <div class="bach-stream" id="bachStream"></div>
+        </div>
+
+        <div class="panel-col">
+            <div class="card active-emerald" style="padding: 10px;">
+                <div class="label" style="color: var(--emerald);">DATA.TXT [INPUT STREAM]</div>
+                <textarea id="dataInput">SABIC Meting Q2 2023
+Parameter: PFAS
+Waarde: 14.2 µg/l
+
+SABIC Meting Q3 2023
+Parameter: PFBS
+Waarde: 8.7 µg/l
+
+SABIC Meting Q4 2023
+Parameter: PFAS
+Waarde: 11.4 µg/l</textarea>
+                
+                <div class="label" style="margin-top: 10px; color: var(--emerald);">DATA.TXT [OUTPUT STREAM]</div>
+                <textarea id="dataOutput">RMO Correctie AK
+Status: Gevalideerd
+Afwijking: -1.2
+Trend: Dalend</textarea>
+
+                <button class="btn-process" onclick="processData()">ANALYSEER MEETWAARDEN</button>
+
+                <div class="data-viz">
+                    <canvas id="dataCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="terminal" id="terminalLog">
+                > VORTEX Core is offline.<br>> Wachten op boot sequence...
+            </div>
+        </div>
+    </div>
+
+<script>
+    // --- SYSTEM DATA ---
+    const bachData = [70, 69, 72, 71, 60, 64, 67, 72, 76, 67, 72, 76, 60, 62, 69, 74, 77, 69, 74, 77, 59, 62, 67, 74, 77, 67, 74, 77, 59, 60, 67, 72, 76];
+    const heb = ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'];
+    const names = ['Alef','Bet','Giemel','Dalet','He','Waw','Zajien','Chet','Tet','Jod','Kaf','Lamed','Mem','Noen','Samech','Ajien','Pe','Tsade','Kof','Resj','Sjien','Taw'];
+
+    // --- STATE VARIABLES ---
+    let audioCtx, mainGain, clockTimer;
+    let stepIndex = 0;
+    let activeRipples = [];
+    let extractedValues = [];
+
+    // --- CANVAS SETUP ---
+    const sonarCanvas = document.getElementById('sonarCanvas');
+    const sCtx = sonarCanvas.getContext('2d');
+    const dataCanvas = document.getElementById('dataCanvas');
+    const dCtx = dataCanvas.getContext('2d');
+    
+    function resizeCanvases() {
+        sonarCanvas.width = sonarCanvas.parentElement.clientWidth;
+        sonarCanvas.height = sonarCanvas.parentElement.clientHeight;
+        dataCanvas.width = dataCanvas.parentElement.clientWidth;
+        dataCanvas.height = dataCanvas.parentElement.clientHeight;
+        drawDataChart(); // Redraw if exists
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    // --- BOOT SEQUENCE ---
+    function bootSystem() {
+        document.getElementById('bootScreen').style.display = 'none';
+        document.getElementById('dashboard').style.filter = 'none';
+        
+        resizeCanvases();
+        initAudio();
+        
+        logTerminal("VORTEX OS Geboot. Systemen online.");
+        logTerminal("Autonome cellulaire cyclus gestart...");
+        
+        requestAnimationFrame(renderSonar);
+        clockTimer = setInterval(systemTick, 1800);
+        systemTick();
+    }
+
+    // --- AUDIO ENGINE ---
+    function initAudio() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        mainGain = audioCtx.createGain();
+        mainGain.gain.value = 0.5;
+        
+        const compressor = audioCtx.createDynamicsCompressor();
+        compressor.threshold.value = -24;
+        compressor.ratio.value = 12;
+        
+        mainGain.connect(compressor);
+        compressor.connect(audioCtx.destination);
+    }
+
+    function triggerPututu(freq, q, decay) {
+        if(!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const filter = audioCtx.createBiquadFilter();
+        const g = audioCtx.createGain();
+
+        filter.type = "bandpass";
+        filter.frequency.value = freq;
+        filter.Q.value = q;
+
+        g.gain.setValueAtTime(0, audioCtx.currentTime);
+        g.gain.linearRampToValueAtTime(0.6, audioCtx.currentTime + 0.1);
+        g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decay);
+
+        osc.type = "sawtooth";
+        osc.frequency.value = freq / 2;
+
+        osc.connect(filter);
+        filter.connect(g);
+        g.connect(mainGain);
+        
+        osc.start();
+        osc.stop(audioCtx.currentTime + decay);
+        
+        activeRipples.push({ 
+            r: 10, maxR: Math.max(sonarCanvas.width, sonarCanvas.height), 
+            speed: 2 + (freq/100), alpha: 1.0, 
+            color: decay > 2 ? '255, 0, 255' : '0, 210, 255' 
+        });
+    }
+
+    // --- CELLULAR TICK ---
+    function systemTick() {
+        const midiNote = bachData[stepIndex % bachData.length];
+        let node = Math.abs(midiNote - 40); 
+        if (node > 52) node = 52;
+
+        const f0 = 110;
+        const freq = f0 * Math.pow(2, node / 41);
+        const qFactor = 40 + (node * 5);
+        const decay = 0.5 + (node / 15);
+
+        const vBase = Math.round(freq);
+        const gray = vBase ^ (vBase >> 1);
+        const mod22 = gray % 22;
+
+        // UI
+        document.getElementById('valNode').innerText = node;
+        document.getElementById('valCluster').innerText = node < 14 ? "Fundament" : (node < 40 ? "Gray-Zone" : "Deep Space");
+        document.getElementById('valFreq').innerText = freq.toFixed(2) + " Hz";
+        document.getElementById('valQ').innerText = `Q: ${qFactor.toFixed(0)} | Decay: ${decay.toFixed(1)}s`;
+        document.getElementById('valG').innerText = `G: ${gray}`;
+        document.getElementById('valMod').innerText = `Mod 22: ${mod22} (${names[mod22]})`;
+        document.getElementById('hebLetter').innerText = heb[mod22];
+
+        document.getElementById('bachStream').innerHTML = bachData.map((note, i) => 
+            `<span class="note ${i === (stepIndex % bachData.length) ? 'active' : ''}">${note}</span>`
+        ).join(' ');
+
+        triggerPututu(freq, qFactor, decay);
+        stepIndex++;
+    }
+
+    // --- SONAR VISUALS ---
+    function renderSonar() {
+        sCtx.fillStyle = "rgba(3, 4, 5, 0.15)";
+        sCtx.fillRect(0, 0, sonarCanvas.width, sonarCanvas.height);
+        
+        const cx = sonarCanvas.width / 2;
+        const cy = sonarCanvas.height / 2;
+
+        sCtx.strokeStyle = "#111";
+        sCtx.lineWidth = 1;
+        for(let i=1; i<6; i++) {
+            sCtx.beginPath();
+            sCtx.arc(cx, cy, i * (sonarCanvas.height/6), 0, Math.PI*2);
+            sCtx.stroke();
+        }
+
+        sCtx.beginPath();
+        sCtx.moveTo(cx, 0); sCtx.lineTo(cx, sonarCanvas.height);
+        sCtx.moveTo(0, cy); sCtx.lineTo(sonarCanvas.width, cy);
+        sCtx.stroke();
+
+        for (let i = activeRipples.length - 1; i >= 0; i--) {
+            let rip = activeRipples[i];
+            rip.r += rip.speed;
+            rip.alpha -= (rip.speed / rip.maxR) * 1.5;
+
+            if (rip.alpha <= 0) {
+                activeRipples.splice(i, 1);
+            } else {
+                sCtx.strokeStyle = `rgba(${rip.color}, ${rip.alpha})`;
+                sCtx.lineWidth = 2 + (rip.alpha * 3);
+                sCtx.beginPath();
+                sCtx.arc(cx, cy, rip.r, 0, Math.PI*2);
+                sCtx.stroke();
+            }
+        }
+        requestAnimationFrame(renderSonar);
+    }
+
+    // --- DATA PARSER ---
+    function processData() {
+        const inputTxt = document.getElementById('dataInput').value;
+        const outputTxt = document.getElementById('dataOutput').value;
+        
+        // Simpele Regex om "Waarde: [getal]" te vinden
+        const regex = /Waarde:\s*([\d.]+)/g;
+        let match;
+        extractedValues = [];
+        
+        while ((match = regex.exec(inputTxt)) !== null) {
+            extractedValues.push(parseFloat(match[1]));
+        }
+
+        if(extractedValues.length > 0) {
+            logTerminal(`<span class="highlight-green">DATA PARSER: ${extractedValues.length} meetwaarden gevonden.</span>`);
+            drawDataChart();
+        } else {
+            logTerminal("<span style='color:red;'>DATA PARSER: Geen numerieke waarden gevonden. Zorg voor 'Waarde: X' syntax.</span>");
+        }
+
+        // Simuleer output analyse
+        if(outputTxt.includes("Correctie")) {
+            logTerminal(`<span class="highlight-green">OUTPUT ANALYSE: RMO Correctie matrix geverifieerd.</span>`);
+        }
+    }
+
+    function drawDataChart() {
+        if(extractedValues.length === 0) return;
+        
+        dCtx.clearRect(0, 0, dataCanvas.width, dataCanvas.height);
+        
+        const padding = 20;
+        const maxVal = Math.max(...extractedValues, 20); // Minimaal as van 20
+        const barWidth = (dataCanvas.width - (padding * 2)) / extractedValues.length;
+        
+        extractedValues.forEach((val, i) => {
+            const barHeight = (val / maxVal) * (dataCanvas.height - (padding * 2));
+            const x = padding + (i * barWidth) + (barWidth * 0.1);
+            const y = dataCanvas.height - padding - barHeight;
+            
+            // Bar
+            dCtx.fillStyle = "rgba(0, 234, 105, 0.6)";
+            dCtx.fillRect(x, y, barWidth * 0.8, barHeight);
+            
+            // Border
+            dCtx.strokeStyle = "#00ea69";
+            dCtx.lineWidth = 1;
+            dCtx.strokeRect(x, y, barWidth * 0.8, barHeight);
+
+            // Text
+            dCtx.fillStyle = "#fff";
+            dCtx.font = "10px monospace";
+            dCtx.textAlign = "center";
+            dCtx.fillText(val.toFixed(1), x + (barWidth * 0.4), y - 5);
+        });
+        
+        // Baseline
+        dCtx.strokeStyle = "#333";
+        dCtx.beginPath();
+        dCtx.moveTo(padding, dataCanvas.height - padding);
+        dCtx.lineTo(dataCanvas.width - padding, dataCanvas.height - padding);
+        dCtx.stroke();
+    }
+
+    // --- TERMINAL ---
+    function logTerminal(msg) {
+        const term = document.getElementById('terminalLog');
+        term.innerHTML = `> ${msg}<br>` + term.innerHTML;
+    }
+</script>
+</body>
+</html>

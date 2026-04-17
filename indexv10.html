@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v72 // OMNI-MATRIX (17 ALEF NODES)</title>
+    <style>
+        :root { 
+            --amber: #ffbf00; --blue: #00d2ff; --bg: #020813; 
+            --panel: rgba(10, 12, 15, 0.85); --stone: #1a1a1a; 
+            --pure: #00ff66;
+        }
+        
+        body { 
+            background: var(--bg); color: var(--amber); 
+            font-family: 'Courier New', monospace; 
+            padding: 40px 20px; margin: 0; 
+            display: flex; flex-direction: column; align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* LUCHTBUBBEL RENDERER */
+        #bubbleCanvas {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 0;
+            background: radial-gradient(circle at bottom, #051322 0%, #010308 100%);
+        }
+
+        .header { 
+            text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 30px; 
+            width: 100%; max-width: 900px; z-index: 10; position: relative;
+        }
+        
+        .dashboard { 
+            background: var(--panel); border: 1px solid #112233; padding: 30px; 
+            width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; 
+            box-shadow: 0 0 40px rgba(0, 150, 255, 0.1); backdrop-filter: blur(5px);
+            z-index: 10; position: relative;
+        }
+
+        /* DATA DISPLAY */
+        .display-panel {
+            grid-column: span 3; background: #000; border: 1px solid var(--blue);
+            padding: 20px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .main-counter { font-size: 54px; color: #fff; text-shadow: 0 0 20px var(--blue); font-weight: bold; }
+        .active-node { font-size: 72px; color: var(--pure); text-shadow: 0 0 30px var(--pure); line-height: 1; }
+
+        /* STAT BOXES */
+        .stat-box { background: rgba(0,0,0,0.6); border: 1px solid var(--stone); padding: 15px; text-align: center; }
+        .stat-label { font-size: 10px; color: #777; margin-bottom: 5px; text-transform: uppercase; }
+        .stat-val { font-size: 24px; color: #fff; }
+
+        /* TERMINAL */
+        .terminal { 
+            grid-column: span 3; background: rgba(0,0,0,0.8); border: 1px dashed #444; 
+            padding: 15px; height: 200px; overflow-y: auto; font-size: 12px; color: #666; 
+            display: flex; flex-direction: column; gap: 5px; line-height: 1.5;
+        }
+        .log-alef { color: var(--pure); font-weight: bold; }
+        .log-data { color: var(--amber); }
+
+        button { 
+            grid-column: span 3; background: #051322; color: var(--blue); border: 1px solid var(--blue); 
+            padding: 20px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; 
+        }
+        button:hover { background: var(--blue); color: #000; box-shadow: 0 0 30px rgba(0, 210, 255, 0.5); }
+        
+        .progress-bar { grid-column: span 3; height: 4px; background: #111; width: 100%; }
+        .progress-fill { height: 100%; background: var(--pure); width: 0%; transition: 0.1s; }
+    </style>
+</head>
+<body>
+
+    <canvas id="bubbleCanvas"></canvas>
+
+    <div class="header">
+        <h2 style="letter-spacing: 3px; margin: 0; color: var(--blue);">VORTEX OMNI-MATRIX v72</h2>
+        <div style="font-size: 11px; color: #777; margin-top: 5px;">17 ALEF NODES // 41-TET SEQUENCER // CHARONIA LAMPAS PM</div>
+    </div>
+
+    <div class="dashboard">
+        
+        <div class="display-panel">
+            <div>
+                <div style="font-size: 12px; color: var(--blue); letter-spacing: 2px;">GOLFLENGTE (INDEX)</div>
+                <div class="main-counter" id="uiCounter">000</div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 12px; color: var(--pure); letter-spacing: 2px;">ACTIEVE RESONANTIE</div>
+                <div class="active-node" id="uiAlef">א</div>
+            </div>
+        </div>
+
+        <div class="progress-bar"><div class="progress-fill" id="uiProgress"></div></div>
+
+        <div class="stat-box">
+            <div class="stat-label">HARMONISCH VEELVOUD</div>
+            <div class="stat-val" id="uiHarmonic" style="color: var(--amber);">0 x 22</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">GRAY CODE (G)</div>
+            <div class="stat-val" id="uiGray" style="color: #fff;">0</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">41-TET FREQUENTIE</div>
+            <div class="stat-val" id="uiFreq" style="color: var(--blue);">110.0 Hz</div>
+        </div>
+
+        <button id="btnPlay">>> START DE 17-NODE SEQUENCER</button>
+
+        <div class="terminal" id="terminal">
+            <div>> Data.txt (17 Alef Nodes) ingeladen in geheugen.</div>
+            <div>> 41-TET Pututu Engine Standby. Chavín grondtoon: 110Hz.</div>
+            <div>> Wacht op activering...</div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. DATA.TXT DECODE (De 17 Alef Nodes) ---
+        const ALEF_NODES = [
+            { id: 1, index: 0, gray: 0, harmonic: 0 },
+            { id: 2, index: 27, gray: 22, harmonic: 1 },
+            { id: 3, index: 55, gray: 44, harmonic: 2 },
+            { id: 4, index: 75, gray: 110, harmonic: 5 },
+            { id: 5, index: 111, gray: 88, harmonic: 4 },
+            { id: 6, index: 124, gray: 66, harmonic: 3 },
+            { id: 7, index: 132, gray: 198, harmonic: 9 },
+            { id: 8, index: 151, gray: 220, harmonic: 10 },
+            { id: 9, index: 163, gray: 242, harmonic: 11 },
+            { id: 10, index: 223, gray: 176, harmonic: 8 },
+            { id: 11, index: 236, gray: 154, harmonic: 7 },
+            { id: 12, index: 248, gray: 132, harmonic: 6 },
+            { id: 13, index: 264, gray: 396, harmonic: 18 },
+            { id: 14, index: 303, gray: 440, harmonic: 20 },
+            { id: 15, index: 316, gray: 418, harmonic: 19 },
+            { id: 16, index: 327, gray: 484, harmonic: 22 },
+            { id: 17, index: 339, gray: 506, harmonic: 23 }
+        ];
+
+        // --- 2. BUBBLE ENGINE ---
+        const canvas = document.getElementById('bubbleCanvas');
+        const ctx = canvas.getContext('2d');
+        let bubbles = [];
+        let isBlowing = false;
+        let blowIntensity = 0;
+
+        function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resizeCanvas); resizeCanvas();
+
+        class Bubble {
+            constructor(intensity) {
+                this.x = (window.innerWidth / 2) + ((Math.random() - 0.5) * 200);
+                this.y = window.innerHeight + 20;
+                this.radius = Math.random() * (5 + (intensity * 12)) + 2;
+                this.speedY = Math.random() * (3 + intensity) + 1;
+                this.wobblePhase = Math.random() * Math.PI * 2;
+                this.opacity = Math.random() * 0.5 + 0.3;
+            }
+            update() {
+                this.y -= this.speedY;
+                this.radius += 0.02;
+                this.wobblePhase += 0.1;
+                this.x += Math.sin(this.wobblePhase) * 1.5;
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 210, 255, ${this.opacity * 0.3})`;
+                ctx.fill();
+                ctx.strokeStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.stroke();
+            }
+        }
+
+        function animateBubbles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (isBlowing && Math.random() < blowIntensity) {
+                bubbles.push(new Bubble(blowIntensity));
+                if(Math.random() < 0.5) bubbles.push(new Bubble(blowIntensity)); // Extra bubbels
+            }
+            for (let i = bubbles.length - 1; i >= 0; i--) {
+                bubbles[i].update(); bubbles[i].draw();
+                if (bubbles[i].y + bubbles[i].radius < 0) bubbles.splice(i, 1);
+            }
+            requestAnimationFrame(animateBubbles);
+        }
+        animateBubbles();
+
+        // --- 3. AUDIO ENGINE & SEQUENCER ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let syntheticCaveIR = null;
+        let sequencerIndex = 0;
+        const MAX_INDEX = 350; // Loop grens (net na de 339 node)
+        
+        const terminal = document.getElementById('terminal');
+        function logTerminal(msg, type = "log-data") {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerText = `[${new Date().toISOString().substring(11, 23)}] ${msg}`;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        function generateCaveIR() {
+            const rate = audioCtx.sampleRate;
+            const length = rate * 3.0; 
+            const impulse = audioCtx.createBuffer(2, length, rate);
+            for (let channel = 0; channel < 2; channel++) {
+                const data = impulse.getChannelData(channel);
+                for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-(i/rate) * 4.0);
+            }
+            return impulse;
+        }
+
+        function firePututu(node) {
+            // 41-TET Wiskunde: 110Hz grondtoon, pitch verhoogd op basis van het Harmonisch Veelvoud!
+            const targetFreq = 110.0 * Math.pow(2, node.harmonic / 41);
+            const decayTime = Math.min(0.2 + (node.harmonic * 0.15), 4.0);
+            const qValue = 50 + (node.harmonic * 10); // Scherper naarmate we hoger komen
+
+            // UI Update
+            document.getElementById('uiHarmonic').innerText = `${node.harmonic} x 22`;
+            document.getElementById('uiGray').innerText = node.gray;
+            document.getElementById('uiFreq').innerText = `${targetFreq.toFixed(1)} Hz`;
+            document.getElementById('uiAlef').style.transform = `scale(${1 + (node.harmonic * 0.05)})`;
+            setTimeout(() => document.getElementById('uiAlef').style.transform = "scale(1)", 200);
+
+            logTerminal(`[NODE ${node.id.toString().padStart(3,'0')}] Index: ${node.index} | G=${node.gray} | Harmonic: ${node.harmonic}x22 | א`, "log-alef");
+
+            // Bubbels
+            isBlowing = true;
+            blowIntensity = Math.min((node.harmonic + 1) / 15, 1.0);
+            setTimeout(() => { isBlowing = false; }, decayTime * 1000);
+
+            // Audio
+            const bufferSize = audioCtx.sampleRate * Math.max(decayTime, 1.0);
+            const noiseBuf = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = noiseBuf.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1;
+
+            const noiseSrc = audioCtx.createBufferSource();
+            noiseSrc.buffer = noiseBuf;
+
+            const env = audioCtx.createGain();
+            env.gain.setValueAtTime(0, audioCtx.currentTime);
+            env.gain.linearRampToValueAtTime(1.5, audioCtx.currentTime + 0.05); 
+            env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decayTime);
+
+            const filterMix = audioCtx.createGain();
+            filterMix.gain.value = 0.25;
+
+            [1, 2.7, 4.3, 5.8].forEach(ratio => {
+                const bp = audioCtx.createBiquadFilter();
+                bp.type = 'bandpass';
+                bp.frequency.value = targetFreq * ratio;
+                bp.Q.value = qValue;
+                env.connect(bp);
+                bp.connect(filterMix);
+            });
+
+            noiseSrc.connect(env);
+
+            const convolver = audioCtx.createConvolver();
+            convolver.buffer = syntheticCaveIR;
+            filterMix.connect(convolver);
+            convolver.connect(audioCtx.destination);
+            
+            const dry = audioCtx.createGain(); dry.gain.value = 0.6;
+            filterMix.connect(dry); dry.connect(audioCtx.destination);
+
+            noiseSrc.start();
+        }
+
+        // --- DE LOOP ---
+        function sequencerLoop() {
+            if (sequencerIndex > MAX_INDEX) {
+                sequencerIndex = 0; // Loop de matrix
+                logTerminal("--- SEQUENCE RESET ---", "log-data");
+            }
+
+            document.getElementById('uiCounter').innerText = sequencerIndex.toString().padStart(3, '0');
+            document.getElementById('uiProgress').style.width = `${(sequencerIndex / MAX_INDEX) * 100}%`;
+
+            // Check of huidige index een Alef Node is
+            const activeNode = ALEF_NODES.find(n => n.index === sequencerIndex);
+            if (activeNode) {
+                firePututu(activeNode);
+            }
+
+            sequencerIndex++;
+            setTimeout(sequencerLoop, 35); // Snelheid van de scanner (35ms per stap = heel theatraal)
+        }
+
+        document.getElementById('btnPlay').addEventListener('click', async () => {
+            document.getElementById('btnPlay').style.display = "none";
+            if (audioCtx.state === 'suspended') await audioCtx.resume();
+            if (!syntheticCaveIR) syntheticCaveIR = generateCaveIR();
+            
+            logTerminal("> 17-TET Node Sequencer Gestart...", "log-data");
+            sequencerLoop();
+        });
+    </script>
+</body>
+</html>

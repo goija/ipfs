@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>VORTEX v72 // OMNI-ENGINE</title>
+    <style>
+        :root { 
+            --amber: #ffbf00; --blue: #00d2ff; --bg: #020813; 
+            --panel: rgba(10, 12, 15, 0.95); --pure: #00ff66; --anchor: #ff0055;
+        }
+        body { background: var(--bg); color: var(--amber); font-family: 'Courier New', monospace; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        #bubbleCanvas { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 0; background: radial-gradient(circle at bottom, #051322 0%, #010308 100%); }
+
+        .dashboard { background: var(--panel); border: 1px solid #112233; padding: 25px; width: 100%; max-width: 1000px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; z-index: 10; backdrop-filter: blur(10px); }
+        
+        .matrix-container { grid-column: span 4; background: #000; border: 1px solid var(--blue); height: 300px; overflow-y: auto; display: flex; flex-wrap: wrap; }
+        .b-cell { width: calc(100% / 40); aspect-ratio: 1; border: 1px solid #111; box-sizing: border-box; transition: 0.1s; }
+        .cell-active { background: var(--blue); box-shadow: 0 0 15px var(--blue); }
+        .cell-anchor { border-color: var(--anchor); background: rgba(255, 0, 85, 0.2); }
+
+        .seq-bits { grid-column: span 4; display: flex; justify-content: space-between; gap: 5px; }
+        .bit-box { flex: 1; height: 30px; background: #111; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+        .bit-active { background: var(--blue); color: #000; }
+
+        .stat-box { background: #000; border: 1px solid #222; padding: 10px; text-align: center; }
+        .stat-label { font-size: 9px; color: #777; text-transform: uppercase; }
+        .stat-val { font-size: 18px; color: #fff; }
+
+        .terminal { grid-column: span 4; background: #000; border: 1px dashed #444; padding: 10px; height: 150px; overflow-y: auto; font-size: 11px; color: #666; }
+        button { grid-column: span 4; background: #051322; color: var(--pure); border: 1px solid var(--pure); padding: 15px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<canvas id="bubbleCanvas"></canvas>
+
+<div class="dashboard">
+    <div class="seq-bits" id="bitUI"></div>
+    
+    <div class="matrix-container" id="grid"></div>
+
+    <div class="stat-box">
+        <div class="stat-label">INDEX (B)</div>
+        <div class="stat-val" id="uiIndex">0</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-label">GRAY (52-BIT)</div>
+        <div class="stat-val" id="uiGray">0</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-label">FREQ (356-TET)</div>
+        <div class="stat-val" id="uiFreq">110.0Hz</div>
+    </div>
+    <div class="stat-box">
+        <div class="stat-label">DECAY (ADEM)</div>
+        <div class="stat-val" id="uiDecay">0.0s</div>
+    </div>
+
+    <div class="terminal" id="terminal">
+        <div>> VORTEX OMNI-ENGINE ONLINE.</div>
+        <div>> Marsoulas Preset geladen (Q 410 / Decay 4.20s).</div>
+    </div>
+
+    <button id="btnStart">>> START BLAZER SEQUENCER</button>
+</div>
+
+<script>
+    // --- 1. CONFIG & DATA ---
+    const MASTER_KEY_181 = [1, 0, 1, 1, 0, 1, 0, 1];
+    const ANCHORS = [180, 470];
+    const COLS = 40;
+    
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let masterGain, syntheticIR, seqIndex = 0, matrixIndex = 0;
+    let bubbles = [];
+
+    // --- 2. BUBBLE PHYSICS ---
+    const canvas = document.getElementById('bubbleCanvas');
+    const ctx = canvas.getContext('2d');
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.onresize = resize; resize();
+
+    class Bubble {
+        constructor(x) {
+            this.x = x + (Math.random()-0.5)*100;
+            this.y = canvas.height + 10;
+            this.r = Math.random() * 8 + 2;
+            this.v = Math.random() * 2 + 1;
+        }
+        update() { this.y -= this.v; this.x += Math.sin(this.y*0.05); }
+        draw() { 
+            ctx.beginPath(); ctx.arc(this.x, this.y, this.r, 0, 7); 
+            ctx.strokeStyle = "rgba(0, 210, 255, 0.5)"; ctx.stroke(); 
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+        bubbles.forEach((b, i) => { b.update(); b.draw(); if(b.y < -10) bubbles.splice(i,1); });
+        requestAnimationFrame(animate);
+    }
+    animate();
+
+    // --- 3. CORE LOGIC ---
+    function buildGrid() {
+        const grid = document.getElementById('grid');
+        const bitUI = document.getElementById('bitUI');
+        for(let i=0; i<600; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'b-cell';
+            const row = Math.floor(i/40);
+            let col = i%40;
+            if(row%2 !== 0) col = 39 - col;
+            cell.style.order = (row*40) + col;
+            if(ANCHORS.includes(i)) cell.classList.add('cell-anchor');
+            grid.appendChild(cell);
+        }
+        MASTER_KEY_181.forEach((b, i) => {
+            const div = document.createElement('div');
+            div.className = 'bit-box'; div.id = `bit-${i}`; div.innerText = b;
+            bitUI.appendChild(div);
+        });
+    }
+
+    function generateIR() {
+        const rate = audioCtx.sampleRate, len = rate * 4;
+        const buf = audioCtx.createBuffer(2, len, rate);
+        for(let c=0; c<2; c++) {
+            const d = buf.getChannelData(c);
+            for(let i=0; i<len; i++) d[i] = (Math.random()*2-1) * Math.exp(-i/(rate*0.8));
+        }
+        return buf;
+    }
+
+    function playPututu(freq, q, decay) {
+        const noise = audioCtx.createBuffer(1, audioCtx.sampleRate * decay, audioCtx.sampleRate);
+        const d = noise.getChannelData(0);
+        for(let i=0; i<d.length; i++) d[i] = Math.random()*2-1;
+        
+        const src = audioCtx.createBufferSource(); src.buffer = noise;
+        const env = audioCtx.createGain();
+        env.gain.setValueAtTime(0, audioCtx.currentTime);
+        env.gain.linearRampToValueAtTime(0.5, audioCtx.currentTime + 0.05);
+        env.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + decay);
+
+        const filter = audioCtx.createBiquadFilter();
+        filter.type = 'bandpass'; filter.frequency.value = freq; filter.Q.value = q;
+
+        const rev = audioCtx.createConvolver(); rev.buffer = syntheticIR;
+        
+        src.connect(filter).connect(env).connect(rev).connect(audioCtx.destination);
+        src.connect(filter).connect(env).connect(audioCtx.destination);
+        src.start();
+        for(let i=0; i<20; i++) bubbles.push(new Bubble(window.innerWidth/2));
+    }
+
+    function loop() {
+        const isTrigger = MASTER_KEY_181[seqIndex];
+        const isAnchor = ANCHORS.includes(matrixIndex);
+        
+        // UI reset
+        document.querySelectorAll('.bit-box').forEach(b => b.classList.remove('bit-active'));
+        document.getElementById(`bit-${seqIndex}`).classList.add('bit-active');
+        document.querySelectorAll('.b-cell').forEach(c => c.classList.remove('cell-active'));
+        document.getElementById('grid').children[matrixIndex].classList.add('cell-active');
+
+        // Math
+        const gray = BigInt(matrixIndex) ^ (BigInt(matrixIndex) >> 1n);
+        const freq = 110 * Math.pow(2, matrixIndex / 356);
+
+        document.getElementById('uiIndex').innerText = matrixIndex;
+        document.getElementById('uiGray').innerText = gray.toString();
+        document.getElementById('uiFreq').innerText = freq.toFixed(2) + "Hz";
+
+        if(isTrigger || isAnchor) {
+            // Marsoulas Preset als we op een anker zijn
+            const q = isAnchor ? 410 : 50;
+            const decay = isAnchor ? 4.20 : 1.2;
+            document.getElementById('uiDecay').innerText = decay.toFixed(2) + "s";
+            playPututu(freq, q, decay);
+            
+            const log = document.getElementById('terminal');
+            const div = document.createElement('div');
+            div.innerText = `[${isAnchor?'ANKER':'STEP'}] Index: ${matrixIndex} | Freq: ${freq.toFixed(2)}Hz`;
+            if(isAnchor) div.style.color = "var(--anchor)";
+            log.prepend(div);
+        }
+
+        seqIndex = (seqIndex + 1) % 8;
+        matrixIndex = (matrixIndex + 1) % 600;
+        setTimeout(loop, 200);
+    }
+
+    buildGrid();
+    document.getElementById('btnStart').onclick = () => {
+        audioCtx.resume();
+        syntheticIR = generateIR();
+        document.getElementById('btnStart').style.display = "none";
+        loop();
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v96 // CELLULAR CHAOS ENGINE</title>
+    <style>
+        :root { 
+            --cyan: #00d2ff; --magenta: #ff00ff; --amber: #ffbf00; 
+            --emerald: #00ea69; --danger: #ff0033; --bg: #020304; 
+            --panel: #0a0b0e; --stone: #111; 
+        }
+        
+        body { 
+            background: var(--bg); color: #fff; font-family: 'Courier New', monospace; 
+            margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center;
+        }
+
+        #bootScreen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(2, 3, 4, 0.95); display: flex; justify-content: center; align-items: center;
+            z-index: 100; backdrop-filter: blur(10px);
+        }
+        .btn-boot {
+            background: transparent; border: 2px solid var(--magenta); color: var(--magenta);
+            padding: 20px 40px; font-size: 24px; font-family: inherit; font-weight: bold;
+            cursor: pointer; letter-spacing: 4px; transition: 0.3s; text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
+        }
+        .btn-boot:hover { background: var(--magenta); color: #000; box-shadow: 0 0 50px rgba(255, 0, 255, 0.8); }
+
+        .dashboard {
+            background: var(--panel); border: 1px solid #333; padding: 20px; 
+            width: 100%; max-width: 1400px; display: grid; grid-template-columns: 300px 1fr 350px; gap: 20px;
+            box-shadow: 0 0 50px rgba(255, 0, 255, 0.05); filter: blur(4px); transition: 0.5s filter;
+        }
+
+        .header { grid-column: span 3; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .header-titles h1 { margin: 0; color: var(--magenta); letter-spacing: 5px; font-size: 24px; }
+        
+        .controls { display: flex; gap: 10px; }
+        .btn-play {
+            background: #000; border: 1px solid var(--emerald); color: var(--emerald);
+            padding: 10px 20px; font-size: 14px; font-family: inherit; font-weight: bold;
+            cursor: pointer; letter-spacing: 2px; transition: 0.3s;
+        }
+        .btn-play.paused { border-color: var(--amber); color: var(--amber); }
+
+        .panel-col { display: flex; flex-direction: column; gap: 15px; }
+
+        .card { background: #000; border: 1px solid #222; padding: 15px; position: relative; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--stone); }
+        .card.active-magenta::before { background: var(--magenta); box-shadow: 0 0 10px var(--magenta); }
+        .card.active-amber::before { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+        .card.active-cyan::before { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        .card.active-emerald::before { background: var(--emerald); box-shadow: 0 0 10px var(--emerald); }
+
+        .label { font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 5px; }
+        .value { font-size: 20px; font-weight: bold; color: #fff; }
+        .sub { font-size: 11px; color: #888; margin-top: 3px;}
+
+        .crypto-box { display: flex; align-items: center; justify-content: space-between; }
+        .heb-letter { font-size: 40px; color: var(--amber); line-height: 1; text-shadow: 0 0 20px rgba(255,191,0,0.4); }
+
+        .canvas-container { 
+            background: #000; border: 1px solid #222; height: 350px; 
+            position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center;
+        }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .overlay-label { position: absolute; top: 10px; left: 10px; z-index: 10; font-size: 10px; color: var(--magenta); font-weight: bold; background: rgba(0,0,0,0.7); padding: 5px; }
+
+        /* Generator Buttons */
+        .gen-btn {
+            background: #111; color: var(--cyan); border: 1px solid #333; padding: 10px; width: 100%;
+            cursor: pointer; font-family: inherit; font-size: 11px; font-weight: bold; margin-bottom: 5px;
+            transition: 0.2s; text-align: left;
+        }
+        .gen-btn:hover, .gen-btn.active { background: rgba(0, 210, 255, 0.1); border-color: var(--cyan); }
+        .gen-btn.special { color: var(--magenta); border-color: var(--magenta); }
+        .gen-btn.special:hover, .gen-btn.special.active { background: rgba(255, 0, 255, 0.1); border-color: var(--magenta); box-shadow: 0 0 15px rgba(255,0,255,0.3);}
+        
+        .terminal { background: #000; border: 1px solid #222; padding: 10px; font-size: 10px; color: #777; height: 120px; overflow-y: auto; line-height: 1.4; }
+        .highlight { color: var(--cyan); }
+        .highlight-mag { color: var(--magenta); font-weight: bold;}
+    </style>
+</head>
+<body>
+
+    <div id="bootScreen">
+        <button class="btn-boot" onclick="bootSystem()">BOOT VORTEX v96</button>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <div class="header">
+            <div class="header-titles">
+                <h1>VORTEX v96 // CELLULAR CHAOS ENGINE</h1>
+                <div style="font-size: 11px; color: #666; margin-top: 5px;">RULE 30 FRACTAL . PROCEDURAL LUMINANCE . AUTONOME SONIFICATIE</div>
+            </div>
+            <div class="controls">
+                <button id="btnPlay" class="btn-play" onclick="togglePlayback()">▌▌ PAUZE SCAN</button>
+            </div>
+        </div>
+
+        <div class="panel-col">
+            <div class="card active-emerald">
+                <div class="label">Hardware Klok & Scan Positie</div>
+                <div class="crypto-box">
+                    <div>
+                        <div class="value" id="valClock" style="color:var(--emerald);">0.000 s</div>
+                        <div class="sub">X-As: <span id="valX">0</span> px</div>
+                    </div>
+                    <div style="font-size: 24px; color: var(--emerald);" id="statusText">SCANNING</div>
+                </div>
+            </div>
+
+            <div class="card active-magenta">
+                <div class="label">Actieve Node (Mersenne)</div>
+                <div class="value" id="valNode">0</div>
+                <div class="sub" id="valCluster" style="color:var(--magenta)">Systeem Standby</div>
+            </div>
+            
+            <div class="card active-amber">
+                <div class="label">Luminantie & Cryptografie</div>
+                <div class="crypto-box">
+                    <div>
+                        <div class="value" style="color:var(--amber);" id="valLum">Lum: 0%</div>
+                        <div class="sub" id="valMod">Mod 22: 0</div>
+                    </div>
+                    <div class="heb-letter" id="hebLetter">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-col">
+            <div class="canvas-container">
+                <div class="overlay-label">SONAR RADAR // AKOESTISCHE DRUK</div>
+                <canvas id="sonarCanvas"></canvas>
+            </div>
+        </div>
+
+        <div class="panel-col">
+            <div class="card active-cyan" style="padding: 10px; display: flex; flex-direction: column; border-color: var(--magenta);">
+                <div class="label" style="color: var(--magenta); margin-bottom: 10px;">WISKUNDIGE GENERATOREN</div>
+                
+                <button class="gen-btn" id="btnGen1" onclick="generatePattern('interference')">[1] INTERFERENTIE (Ritmisch)</button>
+                <button class="gen-btn" id="btnGen2" onclick="generatePattern('organic')">[2] ORGANISCHE NEVEL (Aanzwellend)</button>
+                <button class="gen-btn" id="btnGen3" onclick="generatePattern('noise')">[3] CHAOTISCHE RUIS (Statisch)</button>
+                <button class="gen-btn special active" id="btnGen4" onclick="generatePattern('rule30')">[4] RULE 30 FRACTAAL (Chaos Engine)</button>
+                
+                <div class="canvas-container" style="height: 150px; border-color: var(--magenta); margin-top: 10px;">
+                    <div class="overlay-label" style="color: var(--magenta);">LUMINANCE SCANNER</div>
+                    <canvas id="imageCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="terminal" id="terminalLog">
+                > Wachten op systeem boot...
+            </div>
+        </div>
+    </div>
+
+<script>
+    const heb = ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'];
+    const names = ['Alef','Bet','Giemel','Dalet','He','Waw','Zajien','Chet','Tet','Jod','Kaf','Lamed','Mem','Noen','Samech','Ajien','Pe','Tsade','Kof','Resj','Sjien','Taw'];
+
+    let audioCtx, mainGain, lookaheadTimer;
+    let nextScanTime = 0;
+    let isPlaying = false; 
+    let syncQueue = []; 
+    let activeRipples = [];
+
+    let imgData = null;
+    let scanX = 0; 
+    const scanStep = 2; // Pixels per tick
+
+    const sonarCanvas = document.getElementById('sonarCanvas');
+    const sCtx = sonarCanvas.getContext('2d');
+    const imageCanvas = document.getElementById('imageCanvas');
+    const iCtx = imageCanvas.getContext('2d');
+    
+    function resizeCanvases() {
+        sonarCanvas.width = sonarCanvas.parentElement.clientWidth;
+        sonarCanvas.height = sonarCanvas.parentElement.clientHeight;
+        imageCanvas.width = imageCanvas.parentElement.clientWidth;
+        imageCanvas.height = imageCanvas.parentElement.clientHeight;
+        if(imgData === null) generatePattern('rule30'); 
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    // --- PROCEDURAL GENERATORS ---
+    function generatePattern(type) {
+        scanX = 0;
+        
+        document.querySelectorAll('.gen-btn').forEach(btn => btn.classList.remove('active'));
+        if(type === 'interference') document.getElementById('btnGen1').classList.add('active');
+        if(type === 'organic') document.getElementById('btnGen2').classList.add('active');
+        if(type === 'noise') document.getElementById('btnGen3').classList.add('active');
+        if(type === 'rule30') document.getElementById('btnGen4').classList.add('active');
+
+        const w = imageCanvas.width;
+        const h = imageCanvas.height;
+        const img = iCtx.createImageData(w, h);
+        
+        if (type === 'rule30') {
+            // Wolfram Rule 30 Cellular Automaton
+            let grid = new Array(h).fill(0).map(() => new Array(w).fill(0));
+            grid[0][Math.floor(w/2)] = 1; // Zaadje in het midden van de eerste rij
+            
+            for (let y = 1; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    let left = x > 0 ? grid[y-1][x-1] : 0;
+                    let center = grid[y-1][x];
+                    let right = x < w - 1 ? grid[y-1][x+1] : 0;
+                    
+                    // Rule 30 Logica: Left XOR (Center OR Right)
+                    grid[y][x] = left ^ (center | right) ? 1 : 0;
+                }
+            }
+
+            // Map grid naar pixels
+            for(let x = 0; x < w; x++) {
+                for(let y = 0; y < h; y++) {
+                    let index = (y * w + x) * 4;
+                    let val = grid[y][x] ? 255 : 0; // 1 = Wit, 0 = Zwart
+                    img.data[index] = val;     
+                    img.data[index+1] = val;   
+                    img.data[index+2] = val;   
+                    img.data[index+3] = 255;   
+                }
+            }
+            logTerminal("<span class='highlight-mag'>Wiskundig patroon gegenereerd: [RULE 30 FRACTAL]</span>");
+        } else {
+            // Standaard Generatoren
+            for(let x = 0; x < w; x++) {
+                for(let y = 0; y < h; y++) {
+                    let index = (y * w + x) * 4;
+                    let val = 0;
+
+                    if (type === 'interference') {
+                        let v1 = Math.sin((x * 0.05) + (y * 0.02));
+                        let v2 = Math.cos((x * 0.02) - (y * 0.05));
+                        val = Math.floor(((v1 * v2) + 1) * 127);
+                    } 
+                    else if (type === 'organic') {
+                        let v = Math.sin(x*0.01)*Math.cos(y*0.01) + Math.sin(x*0.03 + y*0.02);
+                        val = Math.floor((v + 2) * 64);
+                    }
+                    else if (type === 'noise') {
+                        val = Math.random() > 0.5 ? 255 : 0;
+                    }
+
+                    val = Math.max(0, Math.min(255, val));
+                    img.data[index] = val; img.data[index+1] = val; img.data[index+2] = val; img.data[index+3] = 255;
+                }
+            }
+            logTerminal(`<span class='highlight'>Wiskundig patroon gegenereerd: [${type.toUpperCase()}]</span>`);
+        }
+        
+        iCtx.putImageData(img, 0, 0);
+        imgData = iCtx.getImageData(0, 0, w, h);
+    }
+
+    async function bootSystem() {
+        document.getElementById('bootScreen').style.display = 'none';
+        document.getElementById('dashboard').style.filter = 'none';
+        
+        resizeCanvases();
+        
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        mainGain = audioCtx.createGain();
+        mainGain.gain.value = 0.5;
+        
+        const compressor = audioCtx.createDynamicsCompressor();
+        compressor.threshold.value = -15;
+        compressor.ratio.value = 10;
+        
+        mainGain.connect(compressor);
+        compressor.connect(audioCtx.destination);
+
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        
+        isPlaying = true;
+        logTerminal("VORTEX OS Geboot. Generatieve sensoren online.");
+        logTerminal("<span class='highlight-mag'>RULE 30 CASCADE GEREED VOOR SONIFICATIE.</span>");
+        
+        nextScanTime = audioCtx.currentTime + 0.5; 
+        audioScheduler(); 
+        requestAnimationFrame(renderLoop); 
+    }
+
+    async function togglePlayback() {
+        if (!audioCtx) return;
+        const btn = document.getElementById('btnPlay');
+        if (isPlaying) {
+            await audioCtx.suspend();
+            clearTimeout(lookaheadTimer); 
+            isPlaying = false;
+            btn.innerHTML = "▶ START SCAN";
+            btn.classList.add('paused');
+        } else {
+            await audioCtx.resume();
+            audioScheduler(); 
+            isPlaying = true;
+            btn.innerHTML = "▌▌ PAUZE SCAN";
+            btn.classList.remove('paused');
+        }
+    }
+
+    function audioScheduler() {
+        if (!isPlaying) return; 
+        while (nextScanTime < audioCtx.currentTime + 0.1) {
+            scheduleOpticalNode(nextScanTime);
+            nextScanTime += 0.15; 
+        }
+        lookaheadTimer = setTimeout(audioScheduler, 25);
+    }
+
+    function scheduleOpticalNode(time) {
+        let node = 0;
+        let avgLum = 0;
+
+        if (imgData) {
+            let lumSum = 0;
+            let pixelCount = 0;
+            for (let y = 0; y < imageCanvas.height; y+=2) { 
+                let index = (y * imageCanvas.width + scanX) * 4;
+                let r = imgData.data[index]; let g = imgData.data[index+1]; let b = imgData.data[index+2];
+                lumSum += (0.2126*r + 0.7152*g + 0.0722*b);
+                pixelCount++;
+            }
+            avgLum = pixelCount > 0 ? (lumSum / pixelCount) : 0;
+            node = Math.floor((avgLum / 255) * 52); 
+            scanX = (scanX + scanStep) % imageCanvas.width;
+        }
+
+        const f0 = 110;
+        const freq = f0 * Math.pow(2, node / 41);
+        const qFactor = 40 + (node * 5);
+        const decay = 0.2 + (node / 30); 
+
+        const vBase = Math.round(freq);
+        const gray = vBase ^ (vBase >> 1);
+        const mod22 = gray % 22;
+
+        triggerPututu(freq, qFactor, decay, time, node);
+
+        syncQueue.push({
+            time: time, node: node, lum: avgLum, freq: freq, decay: decay, gray: gray, mod22: mod22, scanPosX: scanX
+        });
+    }
+
+    function triggerPututu(freq, q, decay, time, node) {
+        const osc = audioCtx.createOscillator();
+        const filter = audioCtx.createBiquadFilter();
+        const g = audioCtx.createGain();
+
+        filter.type = "bandpass";
+        filter.frequency.value = freq;
+        filter.Q.value = q;
+
+        g.gain.setValueAtTime(0, time);
+        
+        // Glitchy attack voor extreme waarden (zoals in Rule 30)
+        if (node > 45 || node < 5) {
+            g.gain.linearRampToValueAtTime(0.8, time + 0.01);
+            osc.type = "square"; // Rauw
+        } else {
+            g.gain.linearRampToValueAtTime(0.4, time + 0.02);
+            osc.type = "sawtooth"; 
+        }
+        
+        g.gain.exponentialRampToValueAtTime(0.001, time + decay);
+        osc.frequency.value = freq / 2;
+
+        osc.connect(filter); filter.connect(g); g.connect(mainGain);
+        osc.start(time); osc.stop(time + decay);
+    }
+
+    function renderLoop() {
+        const currentTime = audioCtx ? audioCtx.currentTime : 0;
+        document.getElementById('valClock').innerText = currentTime.toFixed(3) + " s";
+
+        let latestEvent = null;
+
+        while (syncQueue.length > 0 && syncQueue[0].time <= currentTime) {
+            latestEvent = syncQueue.shift(); 
+            
+            document.getElementById('valNode').innerText = latestEvent.node;
+            document.getElementById('valLum').innerText = `Lum: ${((latestEvent.lum/255)*100).toFixed(1)}%`;
+            document.getElementById('valCluster').innerText = latestEvent.node < 14 ? "Fundament" : (latestEvent.node < 40 ? "Gray-Zone" : "Deep Space");
+            document.getElementById('valG').innerText = `G: ${latestEvent.gray}`;
+            document.getElementById('valMod').innerText = `Mod 22: ${latestEvent.mod22} (${names[latestEvent.mod22]})`;
+            document.getElementById('hebLetter').innerText = heb[latestEvent.mod22];
+            document.getElementById('valX').innerText = latestEvent.scanPosX;
+
+            activeRipples.push({ 
+                r: 10, maxR: Math.max(sonarCanvas.width, sonarCanvas.height), 
+                speed: 4 + (latestEvent.freq/200), alpha: 0.8, 
+                color: latestEvent.node > 40 ? '255, 0, 255' : (latestEvent.node < 10 ? '255, 0, 51' : '0, 210, 255') 
+            });
+        }
+
+        // TEKEN SONAR
+        sCtx.fillStyle = "rgba(3, 4, 5, 0.25)"; 
+        sCtx.fillRect(0, 0, sonarCanvas.width, sonarCanvas.height);
+        
+        const cx = sonarCanvas.width / 2; const cy = sonarCanvas.height / 2;
+        sCtx.strokeStyle = "#111"; sCtx.lineWidth = 1;
+        for(let i=1; i<6; i++) { sCtx.beginPath(); sCtx.arc(cx, cy, i * (sonarCanvas.height/6), 0, Math.PI*2); sCtx.stroke(); }
+        sCtx.beginPath(); sCtx.moveTo(cx, 0); sCtx.lineTo(cx, sonarCanvas.height); sCtx.moveTo(0, cy); sCtx.lineTo(sonarCanvas.width, cy); sCtx.stroke();
+
+        for (let i = activeRipples.length - 1; i >= 0; i--) {
+            let rip = activeRipples[i];
+            if (isPlaying) { rip.r += rip.speed; rip.alpha -= (rip.speed / rip.maxR) * 2.0; }
+            if (rip.alpha <= 0) {
+                activeRipples.splice(i, 1);
+            } else {
+                sCtx.strokeStyle = `rgba(${rip.color}, ${rip.alpha})`;
+                sCtx.lineWidth = 1 + (rip.alpha * 2);
+                sCtx.beginPath(); sCtx.arc(cx, cy, rip.r, 0, Math.PI*2); sCtx.stroke();
+            }
+        }
+
+        // TEKEN SCANLIJN
+        if (imgData && latestEvent) {
+            iCtx.putImageData(imgData, 0, 0); 
+            iCtx.beginPath(); iCtx.moveTo(latestEvent.scanPosX, 0); iCtx.lineTo(latestEvent.scanPosX, imageCanvas.height);
+            iCtx.strokeStyle = "rgba(255, 0, 255, 0.8)"; iCtx.lineWidth = 2; iCtx.stroke();
+            iCtx.beginPath(); iCtx.moveTo(latestEvent.scanPosX, 0); iCtx.lineTo(latestEvent.scanPosX, imageCanvas.height);
+            iCtx.strokeStyle = "rgba(255, 0, 255, 0.3)"; iCtx.lineWidth = 6; iCtx.stroke();
+        }
+        
+        requestAnimationFrame(renderLoop);
+    }
+
+    function logTerminal(msg) {
+        const term = document.getElementById('terminalLog');
+        term.innerHTML = `> ${msg}<br>` + term.innerHTML;
+    }
+</script>
+</body>
+</html>

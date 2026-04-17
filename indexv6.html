@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v72 // DATA INGEST & LOG EXPORT</title>
+    <style>
+        :root { 
+            --amber: #ffbf00; --blue: #00d2ff; --bg: #050608; 
+            --panel: #0a0c0f; --stone: #1a1a1a; --alert: #ff2a2a;
+            --pure: #00ff66;
+        }
+        
+        body { 
+            background: var(--bg); color: var(--amber); 
+            font-family: 'Courier New', monospace; 
+            padding: 40px 20px; margin: 0; 
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .header { text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 30px; width: 100%; max-width: 900px; }
+        
+        .dashboard { 
+            background: var(--panel); border: 1px solid #333; padding: 30px; 
+            width: 100%; max-width: 900px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
+
+        /* DATA INPUT ZONE */
+        .upload-zone {
+            grid-column: span 2; border: 2px dashed var(--blue); background: rgba(0, 210, 255, 0.05);
+            padding: 30px; text-align: center; cursor: pointer; transition: 0.3s;
+        }
+        .upload-zone:hover { background: rgba(0, 210, 255, 0.1); border-color: #fff; }
+        .upload-zone input[type="file"] { display: none; }
+        
+        /* TERMINAL / LOG.TXT PREVIEW */
+        .terminal {
+            grid-column: span 2; background: #000; border: 1px solid #222; 
+            padding: 15px; height: 300px; overflow-y: auto; font-size: 11px; color: #aaa;
+            display: flex; flex-direction: column; gap: 4px; box-shadow: inset 0 0 20px #000;
+        }
+        .terminal-line { line-height: 1.4; }
+        .log-sys { color: #888; }
+        .log-data { color: var(--amber); }
+        .log-alef { color: var(--pure); font-weight: bold; }
+        .log-error { color: var(--alert); }
+
+        /* STATUS BOXES */
+        .stat-box { background: #000; border: 1px solid var(--stone); padding: 15px; text-align: center; }
+        .stat-label { font-size: 10px; color: #777; margin-bottom: 5px; text-transform: uppercase;}
+        .stat-val { font-size: 24px; color: #fff; }
+
+        /* EXPORT BUTTON */
+        button {
+            grid-column: span 2; background: #111; color: var(--amber); border: 1px solid var(--amber); 
+            padding: 15px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s;
+            opacity: 0.5; pointer-events: none;
+        }
+        button.active { opacity: 1; pointer-events: auto; background: rgba(255, 191, 0, 0.1); }
+        button.active:hover { background: var(--amber); color: #000; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="letter-spacing: 3px; margin: 0; color: var(--blue);">VORTEX I/O MATRIX v72</h2>
+        <div style="font-size: 11px; color: #777; margin-top: 5px;">DATA.TXT INGESTION & LOG.TXT COMPILATION</div>
+    </div>
+
+    <div class="dashboard">
+        
+        <label class="upload-zone" id="dropZone">
+            <input type="file" id="fileInput" accept=".txt, .csv, .log">
+            <div style="font-size: 18px; color: var(--blue); font-weight: bold;">[ LAAD DATA.TXT ]</div>
+            <div style="font-size: 11px; color: #666; margin-top: 10px;">Klik of sleep een tekstbestand hierheen om de engine te voeden</div>
+        </label>
+
+        <div class="stat-box">
+            <div class="stat-label">REGELS GELEZEN</div>
+            <div class="stat-val" id="uiLines">0</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">ALEF NODES GEVONDEN</div>
+            <div class="stat-val" id="uiNodes" style="color: var(--pure);">0</div>
+        </div>
+
+        <div class="terminal" id="terminal">
+            <div class="terminal-line log-sys">> Wacht op data.txt invoer...</div>
+        </div>
+
+        <button id="btnExport">DOWNLOAD LOG.TXT</button>
+
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const dropZone = document.getElementById('dropZone');
+        const terminal = document.getElementById('terminal');
+        const uiLines = document.getElementById('uiLines');
+        const uiNodes = document.getElementById('uiNodes');
+        const btnExport = document.getElementById('btnExport');
+
+        let logBuffer = []; // Slaat alle log-regels op voor export
+        let alefCount = 0;
+
+        // Schrijf naar de virtuele terminal én de log buffer
+        function writeLog(message, type = 'log-data') {
+            const timestamp = new Date().toISOString().substring(11, 23);
+            const lineStr = `[${timestamp}] ${message}`;
+            
+            // UI Update
+            const div = document.createElement('div');
+            div.className = `terminal-line ${type}`;
+            div.innerText = lineStr;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight; // Auto-scroll
+            
+            // Opslaan in geheugen voor latere export
+            logBuffer.push(lineStr);
+        }
+
+        function processData(text) {
+            writeLog("> data.txt succesvol in geheugen geladen. Start parsing...", "log-sys");
+            
+            const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+            let currentIndex = 0;
+            alefCount = 0;
+            logBuffer = []; // Reset buffer
+
+            writeLog(`> ${lines.length} regels gedetecteerd. Initiëren Gray-Code scan...`, "log-sys");
+
+            // Gebruik setInterval om het 'scannen' theatraal te vertragen
+            const interval = setInterval(() => {
+                if (currentIndex >= lines.length) {
+                    clearInterval(interval);
+                    writeLog("=========================================", "log-sys");
+                    writeLog(`> SCAN VOLTOOID. ${alefCount} Alef Nodes gedetecteerd.`, "log-sys");
+                    writeLog("=========================================", "log-sys");
+                    enableExport();
+                    return;
+                }
+
+                const dataLine = lines[currentIndex];
+                const b = currentIndex;
+                const g = b ^ (b >> 1); // Vortex Gray Code formule
+                
+                // Update UI Counters
+                uiLines.innerText = currentIndex + 1;
+
+                if (g % 22 === 0) {
+                    alefCount++;
+                    uiNodes.innerText = alefCount;
+                    writeLog(`[NODE ${b}] RESONANTIE DETECTED (G=${g}). DATA: "${dataLine.substring(0, 40)}..."`, "log-alef");
+                } else {
+                    // Log niet elke regel om de terminal leesbaar te houden, log 1 op de 5 of bij errors
+                    if (Math.random() > 0.8) {
+                        writeLog(`[INDEX ${b}] Parsing... G=${g}`, "log-data");
+                    }
+                }
+
+                currentIndex++;
+            }, 25); // Verwerk 1 regel per 25ms
+        }
+
+        // --- EXPORT LOGICA ---
+        function enableExport() {
+            btnExport.classList.add('active');
+            btnExport.innerText = "DOWNLOAD LOG.TXT";
+        }
+
+        btnExport.addEventListener('click', () => {
+            // Voeg een header toe aan het logbestand
+            logBuffer.unshift("=========================================");
+            logBuffer.unshift("VORTEX ENGINE v72 - SYSTEM LOG");
+            logBuffer.unshift("=========================================\n");
+
+            // Maak een Blob (Binary Large Object) van de tekst array
+            const blob = new Blob([logBuffer.join('\n')], { type: 'text/plain' });
+            
+            // Maak een onzichtbare download link en klik erop
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `vortex_log_${new Date().getTime()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            
+            // Ruim op
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            writeLog("> log.txt geëxporteerd naar lokaal systeem.", "log-sys");
+        });
+
+        // --- FILE UPLOAD LOGICA ---
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            writeLog(`> Bestand ontvangen: ${file.name} (${file.size} bytes)`, "log-sys");
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                processData(event.target.result);
+            };
+            reader.readAsText(file);
+        });
+
+        // Drag & Drop visuele feedback
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = "#fff";
+            dropZone.style.background = "rgba(0, 210, 255, 0.2)";
+        });
+        dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = "var(--blue)";
+            dropZone.style.background = "rgba(0, 210, 255, 0.05)";
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = "var(--blue)";
+            dropZone.style.background = "rgba(0, 210, 255, 0.05)";
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                const event = new Event('change');
+                fileInput.dispatchEvent(event);
+            }
+        });
+    </script>
+</body>
+</html>

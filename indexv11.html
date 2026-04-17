@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v72 // 52-BIT BIGINT SLANG & 356-TET</title>
+    <style>
+        :root { 
+            --amber: #ffbf00; --blue: #00d2ff; --bg: #020813; 
+            --panel: rgba(10, 12, 15, 0.95); --stone: #1a1a1a; 
+            --pure: #00ff66; --anchor: #ff0055;
+            --cols: 40;
+        }
+        
+        body { 
+            background: var(--bg); color: var(--amber); 
+            font-family: 'Courier New', monospace; 
+            padding: 20px; margin: 0; 
+            display: flex; flex-direction: column; align-items: center;
+        }
+
+        .header { text-align: center; border-bottom: 1px solid #333; padding-bottom: 15px; margin-bottom: 20px; width: 100%; max-width: 1200px; }
+        
+        .dashboard { 
+            background: var(--panel); border: 1px solid #112233; padding: 20px; 
+            width: 100%; max-width: 1200px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; 
+            box-shadow: 0 0 40px rgba(0, 150, 255, 0.1);
+        }
+
+        /* BOUSTROPHEDON SLANG MATRIX */
+        .matrix-container {
+            grid-column: span 3; background: #000; border: 1px solid var(--blue);
+            padding: 10px; max-height: 500px; overflow-y: auto;
+            box-shadow: inset 0 0 20px #000; display: flex; flex-direction: column;
+        }
+        .b-grid {
+            display: flex; flex-wrap: wrap; width: 100%;
+        }
+        .b-cell {
+            width: calc(100% / var(--cols)); aspect-ratio: 1; 
+            background: #050505; border: 1px solid #111; box-sizing: border-box;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 8px; color: #333; transition: 0.1s;
+        }
+        
+        /* STATE STYLING VOOR DE CELLEN */
+        .cell-active { background: var(--blue); color: #000; box-shadow: 0 0 15px var(--blue); transform: scale(1.2); z-index: 10; }
+        .cell-trail { background: rgba(0, 210, 255, 0.1); border-color: rgba(0, 210, 255, 0.3); color: var(--blue); }
+        .cell-anchor { background: rgba(255, 0, 85, 0.2); border-color: var(--anchor); color: var(--anchor); }
+        .cell-anchor.cell-active { background: var(--anchor); color: #fff; box-shadow: 0 0 20px var(--anchor); transform: scale(1.5); }
+
+        /* STAT BOXES */
+        .stat-box { background: #000; border: 1px solid var(--stone); padding: 15px; text-align: center; }
+        .stat-label { font-size: 10px; color: #777; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px;}
+        .stat-val { font-size: 20px; color: #fff; font-weight: bold; word-break: break-all; }
+
+        /* TERMINAL */
+        .terminal { 
+            grid-column: span 3; background: #000; border: 1px dashed #444; 
+            padding: 15px; height: 160px; overflow-y: auto; font-size: 12px; color: #666; 
+            display: flex; flex-direction: column; gap: 5px; line-height: 1.5;
+        }
+        .log-anchor { color: var(--anchor); font-weight: bold; }
+        .log-sys { color: var(--blue); }
+
+        button { 
+            grid-column: span 3; background: #051322; color: var(--pure); border: 1px solid var(--pure); 
+            padding: 15px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; 
+        }
+        button:hover { background: var(--pure); color: #000; box-shadow: 0 0 30px rgba(0, 255, 102, 0.4); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 style="letter-spacing: 3px; margin: 0; color: var(--blue);">VORTEX v72 // 356-TET BUBBLE SLANG</h2>
+        <div style="font-size: 11px; color: #777; margin-top: 5px;">52-BIT BIGINT GRAY CODE ARCHITECTURE | 40 COLUMNS BOUSTROPHEDON</div>
+    </div>
+
+    <div class="dashboard">
+        
+        <div class="matrix-container">
+            <div class="b-grid" id="grid"></div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">BINAIR INDEX (B)</div>
+            <div class="stat-val" id="uiIndex" style="color: var(--blue);">0</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">BIGINT GRAY CODE (G)</div>
+            <div class="stat-val" id="uiGray" style="color: var(--pure);">0</div>
+        </div>
+
+        <div class="stat-box">
+            <div class="stat-label">356-TET FREQUENTIE</div>
+            <div class="stat-val" id="uiFreq" style="color: var(--amber);">110.00 Hz</div>
+        </div>
+
+        <button id="btnPlay">>> INITIALISEER BIGINT SLANG & AUDIO</button>
+
+        <div class="terminal" id="terminal">
+            <div>> BigInt Core geladen. 52-bits ondersteuning Actief.</div>
+            <div>> 356-TET frequentie mapping vergrendeld (Basis: 110Hz).</div>
+            <div>> 40-Koloms Boustrophedon Matrix klaar voor datastroom...</div>
+        </div>
+
+    </div>
+
+    <script>
+        const grid = document.getElementById('grid');
+        const terminal = document.getElementById('terminal');
+        const uiIndex = document.getElementById('uiIndex');
+        const uiGray = document.getElementById('uiGray');
+        const uiFreq = document.getElementById('uiFreq');
+        const btnPlay = document.getElementById('btnPlay');
+
+        const COLS = 40;
+        const ROWS = 15; // 600 stappen in totaal om de ankers 180 en 470 te laten zien
+        const TOTAL_STEPS = COLS * ROWS;
+        const ANCHORS = [180, 470]; // De door jou aangegeven binaire kruispunten
+
+        let cells = [];
+        let currentIndex = 0;
+        let isRunning = false;
+
+        // --- AUDIO ENGINE ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let oscillator;
+        let masterGain;
+
+        function logTerminal(msg, type = "") {
+            const div = document.createElement('div');
+            if(type) div.className = type;
+            div.innerText = `[${new Date().toISOString().substring(11, 23)}] ${msg}`;
+            terminal.appendChild(div);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // --- BOUSTROPHEDON GENERATOR ---
+        function buildMatrix() {
+            for (let i = 0; i < TOTAL_STEPS; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'b-cell';
+                
+                // Bereken de slang-volgorde!
+                const row = Math.floor(i / COLS);
+                let col = i % COLS;
+                
+                // Oneven rijen keren om (Rechts naar Links)
+                if (row % 2 !== 0) {
+                    col = (COLS - 1) - col;
+                }
+                
+                // style.order plaatst de divs visueel op de juiste plek in de Flexbox
+                cell.style.order = row * COLS + col;
+                
+                // Als dit een ankerpunt is, markeer het
+                if (ANCHORS.includes(i)) {
+                    cell.classList.add('cell-anchor');
+                    cell.innerText = "A";
+                }
+
+                cells.push(cell);
+                grid.appendChild(cell);
+            }
+        }
+
+        // --- BIGINT & 356-TET WISKUNDE ---
+        function calculateBigIntGray(b_val) {
+            // Converteer naar BigInt voor grenzeloze 52-bits berekeningen
+            const b = BigInt(b_val);
+            const g = b ^ (b >> 1n); 
+            return g.toString(); // Terug naar string voor weergave
+        }
+
+        function calculate356TET(step) {
+            // 356-TET Formule: f = 110 * 2^(n/356)
+            return 110.0 * Math.pow(2, step / 356.0);
+        }
+
+        // --- DE MAIN SLANG LOOP ---
+        function snakeLoop() {
+            if (currentIndex >= TOTAL_STEPS) {
+                logTerminal("Einde van matrix bereikt. Slang gestopt.", "log-sys");
+                oscillator.stop();
+                return;
+            }
+
+            // Wis vorige active state
+            if (currentIndex > 0) {
+                cells[currentIndex - 1].classList.remove('cell-active');
+                cells[currentIndex - 1].classList.add('cell-trail');
+            }
+
+            // BigInt Gray & Frequency berekening
+            const grayValue = calculateBigIntGray(currentIndex);
+            const freq = calculate356TET(currentIndex);
+
+            // Audio Update (vloeiende glide)
+            oscillator.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.05);
+
+            // UI Update
+            uiIndex.innerText = currentIndex;
+            uiGray.innerText = grayValue;
+            uiFreq.innerText = freq.toFixed(2) + " Hz";
+
+            // Visual Update
+            const activeCell = cells[currentIndex];
+            activeCell.classList.add('cell-active');
+
+            // Anker Detectie!
+            if (ANCHORS.includes(currentIndex)) {
+                logTerminal(`>>> ANKERPUNT BEREIKT: Index ${currentIndex}`, "log-anchor");
+                logTerminal(`>>> BINAIR: ${currentIndex.toString(2)}`, "log-anchor");
+                logTerminal(`>>> BIGINT GRAY CODE (G): ${grayValue}`, "log-anchor");
+                logTerminal(`>>> 356-TET FREQUENTIE: ${freq.toFixed(2)} Hz`, "log-anchor");
+                
+                // Korte audio-piek bij een anker
+                masterGain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                masterGain.gain.exponentialRampToValueAtTime(0.1, audioCtx.currentTime + 0.3);
+            } else if (currentIndex % 40 === 0 && currentIndex > 0) {
+                logTerminal(`Slang draait... Rij ${currentIndex / 40} betreden.`);
+            }
+
+            currentIndex++;
+            
+            // Snelheid van de slang (40ms per cel)
+            setTimeout(snakeLoop, 40);
+        }
+
+        // --- INIT ---
+        buildMatrix();
+
+        btnPlay.addEventListener('click', async () => {
+            if (isRunning) return;
+            isRunning = true;
+            btnPlay.style.display = "none";
+
+            // Audio Context opstarten
+            audioCtx = new AudioContext();
+            await audioCtx.resume();
+
+            // Synthesizer setup
+            masterGain = audioCtx.createGain();
+            masterGain.gain.value = 0.1; // Zacht en continu
+            masterGain.connect(audioCtx.destination);
+
+            oscillator = audioCtx.createOscillator();
+            oscillator.type = 'sine'; // Zuivere sinus voor microtonale golven
+            oscillator.frequency.value = 110;
+            oscillator.connect(masterGain);
+            oscillator.start();
+
+            logTerminal("> AudioContext Geresumeerd.", "log-sys");
+            logTerminal("> Slang losgelaten in de matrix...", "log-sys");
+            
+            snakeLoop();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VORTEX v93 // RESONANCE CASCADE ENGINE</title>
+    <style>
+        :root { 
+            --cyan: #00d2ff; --magenta: #ff00ff; --amber: #ffbf00; 
+            --emerald: #00ea69; --danger: #ff0033; --bg: #020202; 
+            --panel: #0a0a0a; --stone: #111; 
+        }
+        
+        body { 
+            background: var(--bg); color: #fff; font-family: 'Courier New', monospace; 
+            margin: 0; padding: 15px; display: flex; flex-direction: column; align-items: center;
+            overflow-x: hidden;
+        }
+
+        #bootScreen {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(2, 2, 2, 0.98); display: flex; justify-content: center; align-items: center;
+            z-index: 100; backdrop-filter: blur(10px);
+        }
+        .btn-boot {
+            background: transparent; border: 2px solid var(--danger); color: var(--danger);
+            padding: 20px 40px; font-size: 24px; font-family: inherit; font-weight: bold;
+            cursor: pointer; letter-spacing: 4px; transition: 0.3s; text-transform: uppercase;
+            box-shadow: 0 0 20px rgba(255, 0, 51, 0.3);
+        }
+        .btn-boot:hover { background: var(--danger); color: #000; box-shadow: 0 0 50px rgba(255, 0, 51, 0.8); }
+
+        .dashboard {
+            background: var(--panel); border: 1px solid #333; padding: 20px; 
+            width: 100%; max-width: 1400px; display: grid; grid-template-columns: 300px 1fr 350px; gap: 20px;
+            box-shadow: 0 0 50px rgba(255, 0, 51, 0.05); filter: blur(4px); transition: 0.5s filter;
+        }
+
+        /* Peaking State for Dashboard */
+        .dashboard.peaking { animation: shake 0.5s infinite; border-color: var(--danger); box-shadow: 0 0 100px rgba(255,0,51,0.2); }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-0.5deg); }
+            20% { transform: translate(-3px, 0px) rotate(0.5deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(0.5deg); }
+            50% { transform: translate(-1px, 2px) rotate(-0.5deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-0.5deg); }
+            80% { transform: translate(-1px, -1px) rotate(0.5deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-0.5deg); }
+        }
+
+        .header { grid-column: span 3; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 15px; }
+        .header-titles h1 { margin: 0; color: var(--danger); letter-spacing: 5px; font-size: 24px; }
+        
+        .controls { display: flex; gap: 10px; }
+        .btn-play {
+            background: #000; border: 1px solid var(--emerald); color: var(--emerald);
+            padding: 10px 20px; font-size: 14px; font-family: inherit; font-weight: bold;
+            cursor: pointer; letter-spacing: 2px; transition: 0.3s;
+        }
+        .btn-play.paused { border-color: var(--amber); color: var(--amber); }
+        
+        .btn-peak {
+            background: #000; border: 1px solid var(--danger); color: var(--danger);
+            padding: 10px 20px; font-size: 14px; font-family: inherit; font-weight: bold;
+            cursor: pointer; letter-spacing: 2px; transition: 0.2s;
+        }
+        .btn-peak.active { background: var(--danger); color: #000; box-shadow: 0 0 30px var(--danger); }
+
+        .panel-col { display: flex; flex-direction: column; gap: 15px; }
+
+        .card { background: #000; border: 1px solid #222; padding: 15px; position: relative; }
+        .card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--stone); }
+        .card.active-magenta::before { background: var(--magenta); box-shadow: 0 0 10px var(--magenta); }
+        .card.active-amber::before { background: var(--amber); box-shadow: 0 0 10px var(--amber); }
+        .card.active-cyan::before { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+        .card.active-danger::before { background: var(--danger); box-shadow: 0 0 15px var(--danger); }
+
+        .label { font-size: 10px; color: #666; text-transform: uppercase; margin-bottom: 5px; }
+        .value { font-size: 20px; font-weight: bold; color: #fff; }
+        .sub { font-size: 11px; color: #888; margin-top: 3px;}
+
+        .crypto-box { display: flex; align-items: center; justify-content: space-between; }
+        .heb-letter { font-size: 40px; color: var(--amber); line-height: 1; text-shadow: 0 0 20px rgba(255,191,0,0.4); }
+
+        .canvas-container { 
+            background: #000; border: 1px solid #222; height: 350px; 
+            position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center;
+        }
+        canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        .overlay-label { position: absolute; top: 10px; left: 10px; z-index: 10; font-size: 10px; color: var(--danger); font-weight: bold; }
+
+        .bach-stream { background: #000; border: 1px dashed #444; padding: 15px; font-size: 12px; color: #555; line-height: 1.8; }
+        .note { display: inline-block; width: 22px; text-align: center; }
+        .note.active { color: #000; background: var(--danger); font-weight: bold; box-shadow: 0 0 10px var(--danger); }
+
+        textarea { width: 100%; height: 120px; background: #050505; border: 1px solid #333; color: #aaa; font-family: 'Courier New', monospace; font-size: 11px; padding: 8px; box-sizing: border-box; resize: none; outline: none; }
+        .btn-process { background: #111; color: #aaa; border: 1px solid #444; padding: 12px; width: 100%; cursor: pointer; font-family: inherit; font-weight: bold; letter-spacing: 1px; margin-top: 5px; }
+        .data-viz { height: 180px; background: #000; border: 1px solid #222; position: relative; margin-top: 10px; }
+        .terminal { background: #000; border: 1px solid #222; padding: 10px; font-size: 10px; color: #777; height: 120px; overflow-y: auto; line-height: 1.4; }
+        .highlight-danger { color: var(--danger); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="bootScreen">
+        <button class="btn-boot" onclick="bootSystem()">BOOT VORTEX CORE</button>
+    </div>
+
+    <div class="dashboard" id="dashboard">
+        <div class="header">
+            <div class="header-titles">
+                <h1>VORTEX v93 // CASCADE ENGINE</h1>
+                <div style="font-size: 11px; color: #666; margin-top: 5px;">RESONANCE OVERRIDE . MERSENNE LIMITER . EXTREME Q-FACTOR</div>
+            </div>
+            <div class="controls">
+                <button id="btnPlay" class="btn-play" onclick="togglePlayback()">▌▌ PAUZE</button>
+                <button id="btnPeak" class="btn-peak" onclick="togglePeak()">⚠️ INITIATE CASCADE</button>
+            </div>
+        </div>
+
+        <div class="panel-col">
+            <div class="card active-danger" id="clockCard">
+                <div class="label">Hardware AudioContext Klok</div>
+                <div class="crypto-box">
+                    <div>
+                        <div class="value" id="valClock" style="color:var(--danger);">0.000 s</div>
+                        <div class="sub">Event Queue: <span id="valQueue">0</span> pending</div>
+                    </div>
+                    <div style="font-size: 24px; color: var(--danger);" id="statusText">LOCKED</div>
+                </div>
+            </div>
+
+            <div class="card active-magenta">
+                <div class="label">Actieve Node (Mersenne Druk)</div>
+                <div class="value" id="valNode">0</div>
+                <div class="sub" id="valCluster" style="color:var(--magenta)">Systeem Standby</div>
+            </div>
+            
+            <div class="card active-amber">
+                <div class="label">Thora-Code Cryptografie (ELS)</div>
+                <div class="crypto-box">
+                    <div>
+                        <div class="value" style="color:var(--amber);" id="valG">G: 0</div>
+                        <div class="sub" id="valMod">Mod 22: 0</div>
+                    </div>
+                    <div class="heb-letter" id="hebLetter">-</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-col">
+            <div class="canvas-container">
+                <div class="overlay-label">SONAR RADAR // OVERRIDE MATRIX</div>
+                <canvas id="sonarCanvas"></canvas>
+            </div>
+
+            <div class="bach-stream" id="bachStream"></div>
+        </div>
+
+        <div class="panel-col">
+            <div class="card active-cyan" style="padding: 10px;">
+                <div class="label" style="color: var(--cyan);">DATA.TXT [INPUT STREAM]</div>
+                <textarea id="dataInput">SABIC Meting Q2 2023
+Parameter: PFAS
+Waarde: 14.2 µg/l
+
+SABIC Meting Q3 2023
+Parameter: PFBS
+Waarde: 8.7 µg/l</textarea>
+                
+                <button class="btn-process" onclick="processData()">ANALYSEER MEETWAARDEN</button>
+                <div class="data-viz">
+                    <canvas id="dataCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="terminal" id="terminalLog">
+                > Hardware klok is offline.<br>> Wachten op boot...
+            </div>
+        </div>
+    </div>
+
+<script>
+    const bachData = [70, 69, 72, 71, 60, 64, 67, 72, 76, 67, 72, 76, 60, 62, 69, 74, 77, 69, 74, 77, 59, 62, 67, 74, 77, 67, 74, 77, 59, 60, 67, 72, 76];
+    const heb = ['א','ב','ג','ד','ה','ו','ז','ח','ט','י','כ','ל','מ','נ','ס','ע','פ','צ','ק','ר','ש','ת'];
+    const names = ['Alef','Bet','Giemel','Dalet','He','Waw','Zajien','Chet','Tet','Jod','Kaf','Lamed','Mem','Noen','Samech','Ajien','Pe','Tsade','Kof','Resj','Sjien','Taw'];
+
+    let audioCtx, mainGain, lookaheadTimer;
+    let nextNoteTime = 0;
+    let stepIndex = 0;
+    let isPlaying = false; 
+    let isPeaking = false; // <-- The Resonance Cascade Flag
+    
+    let syncQueue = []; 
+    let activeRipples = [];
+
+    const sonarCanvas = document.getElementById('sonarCanvas');
+    const sCtx = sonarCanvas.getContext('2d');
+    const dataCanvas = document.getElementById('dataCanvas');
+    const dCtx = dataCanvas.getContext('2d');
+    
+    function resizeCanvases() {
+        sonarCanvas.width = sonarCanvas.parentElement.clientWidth;
+        sonarCanvas.height = sonarCanvas.parentElement.clientHeight;
+        dataCanvas.width = dataCanvas.parentElement.clientWidth;
+        dataCanvas.height = dataCanvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvases);
+
+    async function bootSystem() {
+        document.getElementById('bootScreen').style.display = 'none';
+        document.getElementById('dashboard').style.filter = 'none';
+        
+        resizeCanvases();
+        
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        mainGain = audioCtx.createGain();
+        mainGain.gain.value = 0.6;
+        
+        // Distortion Node voor de Peak
+        const distortion = audioCtx.createWaveShaper();
+        distortion.curve = makeDistortionCurve(400); // Massive overdrive
+        distortion.oversample = '4x';
+        
+        const compressor = audioCtx.createDynamicsCompressor();
+        compressor.threshold.value = -10;
+        compressor.ratio.value = 20; // Hard limiter om speakers te beschermen
+        
+        mainGain.connect(distortion);
+        distortion.connect(compressor);
+        compressor.connect(audioCtx.destination);
+
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+        
+        isPlaying = true;
+        logTerminal("VORTEX OS Geboot. Hardware klok gesynchroniseerd.");
+        
+        nextNoteTime = audioCtx.currentTime + 0.5; 
+        audioScheduler(); 
+        requestAnimationFrame(renderLoop); 
+    }
+
+    // Wiskundige vervorming voor de audio
+    function makeDistortionCurve(amount) {
+        let k = typeof amount === 'number' ? amount : 50,
+            n_samples = 44100,
+            curve = new Float32Array(n_samples),
+            deg = Math.PI / 180, i = 0, x;
+        for ( ; i < n_samples; ++i ) {
+            x = i * 2 / n_samples - 1;
+            curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
+        }
+        return curve;
+    }
+
+    // PEAK MECHANISM TOGGLE
+    function togglePeak() {
+        isPeaking = !isPeaking;
+        const btn = document.getElementById('btnPeak');
+        const dash = document.getElementById('dashboard');
+
+        if (isPeaking) {
+            btn.classList.add('active');
+            btn.innerText = "OVERRIDE ACTIVE";
+            dash.classList.add('peaking');
+            logTerminal("<span class='highlight-danger'>!!! CRITICAL RESONANCE CASCADE INITIATED !!!</span>");
+            logTerminal("<span class='highlight-danger'>Q-FACTOR OVERRIDE. DEEP SPACE LOCK ENGAGED.</span>");
+        } else {
+            btn.classList.remove('active');
+            btn.innerText = "⚠️ INITIATE CASCADE";
+            dash.classList.remove('peaking');
+            logTerminal("Cascade afgebroken. Systemen normaliseren.");
+        }
+    }
+
+    async function togglePlayback() {
+        if (!audioCtx) return;
+        const btn = document.getElementById('btnPlay');
+        if (isPlaying) {
+            await audioCtx.suspend();
+            clearTimeout(lookaheadTimer); 
+            isPlaying = false;
+            btn.innerHTML = "▶ START";
+            btn.classList.add('paused');
+        } else {
+            await audioCtx.resume();
+            audioScheduler(); 
+            isPlaying = true;
+            btn.innerHTML = "▌▌ PAUZE";
+            btn.classList.remove('paused');
+        }
+    }
+
+    // THE SCHEDULER (Met Peak Logic)
+    function audioScheduler() {
+        if (!isPlaying) return; 
+
+        // Als we Peaken, versnelt de interval gigantisch
+        let interval = isPeaking ? 0.15 : 1.5; 
+
+        while (nextNoteTime < audioCtx.currentTime + 0.1) {
+            scheduleNote(nextNoteTime);
+            nextNoteTime += interval; 
+        }
+        lookaheadTimer = setTimeout(audioScheduler, 25);
+    }
+
+    function scheduleNote(time) {
+        const midiNote = bachData[stepIndex % bachData.length];
+        
+        // PEAK OVERRIDE: Forceer maximale node en zwaarte
+        let node = Math.abs(midiNote - 40); 
+        if (node > 52) node = 52;
+        if (isPeaking) node = 52; // DEEP SPACE LOCK
+
+        const f0 = 110;
+        const freq = f0 * Math.pow(2, node / 41);
+        
+        // PEAK OVERRIDE: Extreme Resonantie en feedback lengte
+        const qFactor = isPeaking ? 1000 : 40 + (node * 5); 
+        const decay = isPeaking ? 3.0 : 0.5 + (node / 15);
+
+        const vBase = Math.round(freq);
+        const gray = vBase ^ (vBase >> 1);
+        const mod22 = gray % 22;
+
+        triggerPututu(freq, qFactor, decay, time);
+
+        syncQueue.push({
+            time: time, node: node, freq: freq, decay: decay, gray: gray, mod22: mod22, step: stepIndex
+        });
+
+        stepIndex++;
+    }
+
+    function triggerPututu(freq, q, decay, time) {
+        const osc = audioCtx.createOscillator();
+        const filter = audioCtx.createBiquadFilter();
+        const g = audioCtx.createGain();
+
+        filter.type = "bandpass";
+        filter.frequency.value = freq;
+        filter.Q.value = q;
+
+        g.gain.setValueAtTime(0, time);
+        
+        if (isPeaking) {
+            // Harde aggressieve aanzet
+            g.gain.linearRampToValueAtTime(1.0, time + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.01, time + decay);
+        } else {
+            g.gain.linearRampToValueAtTime(0.6, time + 0.05);
+            g.gain.exponentialRampToValueAtTime(0.001, time + decay);
+        }
+
+        osc.type = isPeaking ? "square" : "sawtooth"; // Square wave is veel zwaarder
+        osc.frequency.value = freq / 2;
+
+        osc.connect(filter); filter.connect(g); g.connect(mainGain);
+        osc.start(time); osc.stop(time + decay);
+    }
+
+    // THE RENDER LOOP
+    function renderLoop() {
+        const currentTime = audioCtx ? audioCtx.currentTime : 0;
+        
+        document.getElementById('valClock').innerText = currentTime.toFixed(3) + " s";
+        document.getElementById('valQueue').innerText = syncQueue.length;
+
+        while (syncQueue.length > 0 && syncQueue[0].time <= currentTime) {
+            const event = syncQueue.shift(); 
+            
+            document.getElementById('valNode').innerText = event.node;
+            document.getElementById('valCluster').innerText = isPeaking ? "CRITICAL MASS" : (event.node < 14 ? "Fundament" : (event.node < 40 ? "Gray-Zone" : "Deep Space"));
+            document.getElementById('valG').innerText = `G: ${event.gray}`;
+            document.getElementById('valMod').innerText = `Mod 22: ${event.mod22} (${names[event.mod22]})`;
+            document.getElementById('hebLetter').innerText = heb[event.mod22];
+
+            document.getElementById('bachStream').innerHTML = bachData.map((note, i) => 
+                `<span class="note ${i === (event.step % bachData.length) ? 'active' : ''}">${note}</span>`
+            ).join(' ');
+
+            activeRipples.push({ 
+                r: 10, maxR: Math.max(sonarCanvas.width, sonarCanvas.height), 
+                speed: isPeaking ? 8 : (3 + (event.freq/150)), 
+                alpha: 1.0, 
+                color: isPeaking ? '255, 0, 51' : (event.decay > 2.0 ? '255, 0, 255' : '0, 234, 105') 
+            });
+        }
+
+        // TEKEN SONAR
+        if (isPeaking) {
+            // Glitchy donkerrode achtergrond
+            sCtx.fillStyle = `rgba(${Math.random()*50}, 0, 0, 0.4)`; 
+            // Camera shake op canvas
+            sCtx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8);
+        } else {
+            sCtx.fillStyle = "rgba(3, 4, 5, 0.2)"; 
+        }
+        
+        sCtx.fillRect(-50, -50, sonarCanvas.width+100, sonarCanvas.height+100); // Ruime clear ivm shake
+        
+        const cx = sonarCanvas.width / 2; const cy = sonarCanvas.height / 2;
+
+        sCtx.strokeStyle = isPeaking ? "#300" : "#111"; 
+        sCtx.lineWidth = 1;
+        for(let i=1; i<6; i++) { sCtx.beginPath(); sCtx.arc(cx, cy, i * (sonarCanvas.height/6), 0, Math.PI*2); sCtx.stroke(); }
+        sCtx.beginPath(); sCtx.moveTo(cx, 0); sCtx.lineTo(cx, sonarCanvas.height); sCtx.moveTo(0, cy); sCtx.lineTo(sonarCanvas.width, cy); sCtx.stroke();
+
+        for (let i = activeRipples.length - 1; i >= 0; i--) {
+            let rip = activeRipples[i];
+            
+            if (isPlaying) {
+                rip.r += rip.speed;
+                rip.alpha -= (rip.speed / rip.maxR) * 1.5;
+            }
+
+            if (rip.alpha <= 0) {
+                activeRipples.splice(i, 1);
+            } else {
+                sCtx.strokeStyle = `rgba(${rip.color}, ${rip.alpha})`;
+                sCtx.lineWidth = isPeaking ? 5 + (Math.random()*5) : 2 + (rip.alpha * 3); // Glitchy dikke lijnen
+                sCtx.beginPath(); sCtx.arc(cx, cy, rip.r, 0, Math.PI*2); sCtx.stroke();
+            }
+        }
+        
+        if (isPeaking) sCtx.setTransform(1, 0, 0, 1, 0, 0); // Reset shake
+        
+        requestAnimationFrame(renderLoop);
+    }
+
+    // --- DATA PARSER ---
+    function processData() {
+        const inputTxt = document.getElementById('dataInput').value;
+        const regex = /Waarde:\s*([\d.]+)/g;
+        let match; let extractedValues = [];
+        
+        while ((match = regex.exec(inputTxt)) !== null) { extractedValues.push(parseFloat(match[1])); }
+
+        if(extractedValues.length > 0) {
+            logTerminal(`<span class="highlight-green">DATA PARSER: ${extractedValues.length} meetwaarden gevonden.</span>`);
+            dCtx.clearRect(0, 0, dataCanvas.width, dataCanvas.height);
+            const padding = 20; const maxVal = Math.max(...extractedValues, 20); 
+            const barWidth = (dataCanvas.width - (padding * 2)) / extractedValues.length;
+            
+            extractedValues.forEach((val, i) => {
+                const barHeight = (val / maxVal) * (dataCanvas.height - (padding * 2));
+                const x = padding + (i * barWidth) + (barWidth * 0.1);
+                const y = dataCanvas.height - padding - barHeight;
+                
+                dCtx.fillStyle = "rgba(0, 210, 255, 0.6)"; dCtx.fillRect(x, y, barWidth * 0.8, barHeight);
+                dCtx.strokeStyle = "#00d2ff"; dCtx.strokeRect(x, y, barWidth * 0.8, barHeight);
+                dCtx.fillStyle = "#fff"; dCtx.font = "10px monospace"; dCtx.textAlign = "center";
+                dCtx.fillText(val.toFixed(1), x + (barWidth * 0.4), y - 5);
+            });
+            dCtx.strokeStyle = "#333"; dCtx.beginPath(); dCtx.moveTo(padding, dataCanvas.height - padding); dCtx.lineTo(dataCanvas.width - padding, dataCanvas.height - padding); dCtx.stroke();
+        }
+    }
+
+    function logTerminal(msg) {
+        const term = document.getElementById('terminalLog');
+        term.innerHTML = `> ${msg}<br>` + term.innerHTML;
+    }
+</script>
+</body>
+</html>
