@@ -82,7 +82,7 @@
         }
 
         th, td {
-            padding: 16px 20px;
+            padding: 14px 20px;
             text-align: left;
             display: table-cell;
         }
@@ -97,4 +97,368 @@
         }
 
         tr:not(:last-child) {
-            border-bottom: 1px solid var(--
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr:hover {
+            background-color: var(--card-hover);
+        }
+
+        .file-link {
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: 500;
+            word-break: break-all;
+        }
+
+        .file-link:hover {
+            color: var(--accent-hover);
+            text-decoration: underline;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            background-color: #334155;
+            color: #e2e8f0;
+        }
+
+        .badge.html {
+            background-color: rgba(56, 189, 248, 0.15);
+            color: var(--accent-color);
+        }
+
+        .badge.json {
+            background-color: rgba(234, 179, 8, 0.15);
+            color: #fde047;
+        }
+
+        .badge.txt {
+            background-color: rgba(16, 185, 129, 0.15);
+            color: #10b981;
+        }
+
+        .badge.misc {
+            background-color: rgba(148, 163, 184, 0.15);
+            color: #cbd5e1;
+        }
+
+        .size {
+            font-family: monospace;
+            color: var(--text-muted);
+        }
+
+        /* --- Mobiele Optimalisatie (Media Query) --- */
+        @media (max-width: 650px) {
+            body {
+                padding: 15px 10px;
+            }
+
+            header {
+                text-align: left;
+                padding-bottom: 15px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            table, thead, tbody, th, td, tr {
+                display: block;
+                width: 100%;
+            }
+
+            thead {
+                display: none;
+            }
+
+            tr {
+                background-color: var(--card-bg);
+                border-radius: 10px;
+                margin-bottom: 12px;
+                padding: 15px;
+                border: 1px solid var(--border-color);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                position: relative;
+            }
+
+            td {
+                padding: 0;
+                border: none;
+                text-align: left;
+            }
+
+            td:nth-child(1) {
+                margin-bottom: 12px;
+                padding-right: 25px;
+            }
+
+            .file-link {
+                font-size: 1.05rem;
+                display: block;
+                line-height: 1.3;
+            }
+
+            td:nth-child(2) {
+                display: inline-block;
+                margin-right: 10px;
+            }
+
+            td:nth-child(3) {
+                display: inline-block;
+                font-size: 0.85rem;
+            }
+
+            tr::after {
+                content: "→";
+                position: absolute;
+                right: 15px;
+                bottom: 13px;
+                color: var(--text-muted);
+                font-size: 1.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Vortex Assets Index</h1>
+        <p class="subtitle">Overzicht op <a href="https://ipfs-dxgxo7hpq-goija1.vercel.app/" target="_blank">ipfs-dxgxo7hpq-goija1.vercel.app</a></p>
+    </header>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Bestandsnaam / Link</th>
+                <th>Type</th>
+                <th>Grootte</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/andersomland.html" target="_blank">/andersomland.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">9.59 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/andersomland1.html" target="_blank">/andersomland1.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">17.5 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/andersomland2.html" target="_blank">/andersomland2.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">10.2 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/andersomland3.html" target="_blank">/andersomland3.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">13.1 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/bach.txt" target="_blank">/bach.txt</a></td>
+                <td><span class="badge txt">TXT</span></td>
+                <td class="size">871 B</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/cyberquota.html" target="_blank">/cyberquota.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">7.81 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/eindrapportage-module.html" target="_blank">/eindrapportage-module.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">7.64 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/index.html" target="_blank">/index.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">8.16 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv1.html" target="_blank">/indexv1.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">10.6 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv10.html" target="_blank">/indexv10.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">13.5 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv11.html" target="_blank">/indexv11.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">10.7 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv12.html" target="_blank">/indexv12.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">6.05 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv13.html" target="_blank">/indexv13.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">8.73 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv14.html" target="_blank">/indexv14.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">16.4 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv2" target="_blank">/indexv2</a></td>
+                <td><span class="badge misc">MISC</span></td>
+                <td class="size">3.89 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv2.html" target="_blank">/indexv2.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">3.89 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv3.html" target="_blank">/indexv3.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">9.48 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv4.html" target="_blank">/indexv4.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">11.2 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv5.html" target="_blank">/indexv5.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">7.88 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/indexv6.html" target="_blank">/indexv6.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">9.79 kB</td>
+            </tr>
+
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/sill.html" target="_blank">/sill.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">11.4 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/sillly.html" target="_blank">/sillly.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">12.2 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_api_probe.html" target="_blank">/vortex_api_probe.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">13.7 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_asset_explorer.html" target="_blank">/vortex_asset_explorer.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">16.5 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_boxo_explorer.html" target="_blank">/vortex_boxo_explorer.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">9.46 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_dns_enumerator.html" target="_blank">/vortex_dns_enumerator.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">11.1 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_evidence_log.html" target="_blank">/vortex_evidence_log.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">7.84 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_evidence_viewer.html" target="_blank">/vortex_evidence_viewer.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">18.1 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_hex_viewer.html" target="_blank">/vortex_hex_viewer.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">15.2 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_ipfs_recon.html" target="_blank">/vortex_ipfs_recon.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">11.9 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_link_analyzer.html" target="_blank">/vortex_link_analyzer.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">11.3 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_nexus_export.json" target="_blank">/vortex_nexus_export.json</a></td>
+                <td><span class="badge json">JSON</span></td>
+                <td class="size">4.14 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_players_exfil.html" target="_blank">/vortex_players_exfil.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">14.5 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_postman_osint.html" target="_blank">/vortex_postman_osint.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">12 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_target_185_136_92_16.html" target="_blank">/vortex_target_185_136_92_16.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">11.8 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_target_scan_update.html" target="_blank">/vortex_target_scan_update.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">14.4 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_target_videre10.html" target="_blank">/vortex_target_videre10.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">6.86 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_v97_archaeo.html" target="_blank">/vortex_v97_archaeo.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">15 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortex_woo_brabant.html" target="_blank">/vortex_woo_brabant.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">11.9 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortexos.html" target="_blank">/vortexos.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">16.6 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortexosv1.html" target="_blank">/vortexosv1.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">21.4 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/vortexosv2.html" target="_blank">/vortexosv2.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">20.3 kB</td>
+            </tr>
+            <tr>
+                <td><a class="file-link" href="https://ipfs-dxgxo7hpq-goija1.vercel.app/woo.html" target="_blank">/woo.html</a></td>
+                <td><span class="badge html">HTML</span></td>
+                <td class="size">9.71 kB</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>
